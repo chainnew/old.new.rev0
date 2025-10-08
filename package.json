@@ -20,6 +20,7 @@
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.6",
+    "synk": "^0.0.2",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
@@ -33,5 +34,8 @@
     "tailwindcss": "^4",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "prismjs": ">=1.30.0"
   }
 }
