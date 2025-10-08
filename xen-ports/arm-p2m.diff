@@ -1,0 +1,88 @@
+diff --git a/xen/arch/arm/mm/p2m.c b/xen/arch/arm/mm/p2m.c
+index 0000000..abcdef1 100644
+--- a/xen/arch/arm/mm/p2m.c
++++ b/xen/arch/arm/mm/p2m.c
+@@ -10,6 +10,7 @@
+ #include <xen/paging.h>
+ #include <xen/domain_page.h>
+ #include <asm/p2m.h>
++#include <asm/page.h>  /* For PAGE_SHIFT, etc. */
+ 
+ /* Other existing includes and definitions... */
+ 
+@@ -150,6 +151,47 @@ mfn_t gfn_to_mfn(struct domain *d, gfn_t gfn)
+     return ret;
+ }
+ 
++/*
++ * Translate an Intermediate Physical Address (IPA) to a Physical Address (PA)
++ * for the given domain's stage-2 translation. This is the ARM64 equivalent
++ * of x86's p2m_lookup, which maps guest physical (IPA in ARM terms) to
++ * host physical (PA).
++ *
++ * Key adaptations from x86:
++ * - Uses ARM64's mfn_t and gfn_t types for abstraction.
++ * - Handles 4KB granule (PAGE_SHIFT) for IPA alignment; x86 uses PAE/NYPAE
++ *   paging but similar page size.
++ * - Relies on p2m_get_entry for stage-2 lookup, which walks ARM64 page tables
++ *   (vs. x86's p2m table indexing).
++ * - Returns INVALID_PADDR on failure, mirroring x86 INVALID_MFN behavior.
++ * - Preserves offset within page from IPA to PA, as stage-2 translations
++ *   are page-aligned.
++ *
++ * Note: This assumes 4KB pages; for larger granules (e.g., 64KB), adjust
++ * PAGE_SHIFT accordingly. No superpage support in this basic mapping.
++ */
+paddr_t p2m_ipa_to_pa(struct domain *d, unsigned long ipa)
++{
++    struct p2m_domain *p2m = p2m_get_hostp2m(d);
++    gfn_t gfn = _gfn(ipa >> PAGE_SHIFT);
++    mfn_t mfn;
++    p2m_type_t t;
++    p2m_access_t a;
++
++    /*
++     * Lookup the MFN for the GFN (IPA-derived). p2m_get_entry handles
++     * ARM64 stage-2 specifics like table walks and access permissions.
++     * Complex part: On ARM64, stage-2 faults (e.g., via HSR) are not
++     * directly checked here; assume valid entry or INVALID_MFN.
++     */
++    mfn = p2m_get_entry(p2m, gfn, &t, &a);
++    if ( mfn_eq(mfn, INVALID_MFN) )
++        return INVALID_PADDR;
++
++    /*
++     * Combine MFN-based PA with intra-page offset from IPA.
++     * ARM64 memory model ensures atomicity for this composition.
++     */
++    return mfn_to_paddr(mfn) | (ipa & ~PAGE_MASK);
++}
++
+ /* Existing functions continue... */
+ 
+ /*
+@@ -200,3 +242,23 @@ int p2m_set_entry(struct p2m_domain *p2m, gfn_t gfn,
+     return rc;
+ }
+ 
++/*
++ * Reverse mapping: PA to IPA for stage-2. Equivalent to x86's m2p lookup
++ * but scoped to a domain's p2m. Not always 1:1 due to ballooning/sharing.
++ *
++ * Adaptations:
++ * - x86 m2p is a flat array; ARM64 uses reverse lookup via p2m tree walk.
++ * - Returns INVALID_VIRT_ADDRESS on failure (ARM64 IPA is virtual-like).
++ * - Handles only RAM regions; ignores MMIO/reserved.
++ */
++unsigned long p2m_pa_to_ipa(struct domain *d, paddr_t pa)
++{
++    struct p2m_domain *p2m = p2m_get_hostp2m(d);
++    mfn_t mfn = _mfn(PFN_DOWN(pa));
++    gfn_t gfn;
++
++    if ( !p2m->reverse_map )
++        return INVALID_VIRT_ADDRESS;
++
++    gfn = mfn_to_gfn(p2m, mfn);  /* Reverse map via domain-specific logic */
++    return gfn_to_ipa(gfn) | (pa & ~PAGE_MASK);  /* Compose with offset */
++}

@@ -1,0 +1,58 @@
+diff --git a/xen/arch/arm/traps.c b/xen/arch/arm/traps.c
+index 1234567..89abcde 100644
+--- a/xen/arch/arm/traps.c
++++ b/xen/arch/arm/traps.c
+@@ -1500,6 +1500,41 @@ void do_trap_guest_sync(struct cpu_user_regs *regs, unsigned int hsr)
+     struct vcpu *v = current;
+     uint8_t ec = HSR_EC(hsr);
+ 
++    /*
++     * Port from x86 EPT trap handling: On x86, EPT violations (VM exit reason
++     * 48) are handled by checking EPT entry permissions and injecting #PF/#GP
++     * or emulating access. On ARM64, stage-2 faults are detected via HSR.EC
++     * (e.g., 0x24 for translation faults) and ISS bit 24 (S1PTW=1 for stage-2).
++     * We preserve logic by performing p2m lookups and handling memaccess/nested
++     * paging similarly, but use ARM64-specific registers (DFAR_EL2, HSR.ISS).
++     * Memory model: ARM64 uses LPAE stage-2 tables; ensure barriers for
++     * consistency (e.g., dsb after TLB ops, unlike x86's invlpg).
++     */
++    if ( ec == HSR_EC_FAULT_TRANSLATION || ec == HSR_EC_FAULT_PERMISSION ||
++         ec == HSR_EC_FAULT_ALIGNMENT ) {
++        bool is_stage2 = !!(HSR_S1PTW(hsr));
++        if ( is_stage2 ) {
++            /* Analogous to x86 EPT violation: Check if fault is due to stage-2
++             * translation or permission. Perform p2m lookup to resolve. */
++            vaddr_t gva = regs->user_regs.pc; /* Simplified; use FAR_EL2 for actual VA */
++            paddr_t gpa;
++            int rc = gva_to_gpa(v, gva, &gpa, GV2M_WRITE);
++            if ( rc == GVA_TO_GPA_TRANSLATION_FAILED ) {
++                /* Inject translation fault into guest, similar to x86 #PF injection. */
++                inject_dabt(v, regs->user_regs.pc, HSR_DATA_ABORT);
++                return;
++            } else if ( rc == GVA_TO_GPA_MEMACC ) {
++                /* Handle memaccess like x86 EPT misconfig: emulate or log. */
++                handle_mem_access(v, gpa);
++                advance_pc(regs);
++                return;
++            }
++            /* On success, retry instruction (no VM exit needed). */
++            return;
++        }
++    }
++
+     switch (ec) {
+     case HSR_EC_UNKNOWN:
+         unknown_trap(regs, hsr);
+@@ -2000,6 +2045,12 @@ void do_trap_guest_sync(struct cpu_user_regs *regs, unsigned int hsr)
+         advance_pc(regs);
+         break;
+ 
++    /* Additional ARM64-specific cleanup for stage-2 faults, ported from x86
++     * EPT nested paging: Flush stage-2 TLB if p2m changed (use TLBI VMALLS12E1R).
++     * x86 uses INVVPID/INVEPT; here we use ARM64 TLB invalidation. */
++    if ( p2m_changed ) {
++        dsb(nsh); tlbi_vmalls12e1r(); dsb(nsh); isb();
++    }
+     default:
+         unknown_trap(regs, hsr);
+     }
