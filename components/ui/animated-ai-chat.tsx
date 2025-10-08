@@ -32,6 +32,7 @@ import {
     ChevronRight,
     Smartphone,
     Palette,
+    Hash,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react"
@@ -43,6 +44,14 @@ import { BottomPanel } from "./bottom-panel";
 import { IPhoneSimulator } from "./iphone-simulator";
 import { AndroidSimulator } from "./android-simulator";
 import { themes, saveTheme, loadTheme, getTheme } from "@/lib/themes";
+import { ThemePicker } from "./theme-picker";
+import { UserSidebar } from "./user-sidebar";
+import { AccountSettings } from "./account-settings";
+import { MessagingPanel } from "./messaging-panel";
+import { AuthModal } from "./auth-modal";
+import { GitHubPanel } from "./github-panel";
+import { ChatSidebar } from "./chat-sidebar";
+import { AdminPanel } from "../admin/admin-panel";
 
 interface UseAutoResizeTextareaProps {
     minHeight: number;
@@ -195,6 +204,13 @@ export function AnimatedAIChat() {
     const [showAndroid, setShowAndroid] = useState(false);
     const [currentTheme, setCurrentTheme] = useState('midnight');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
+    const [showAccountSettings, setShowAccountSettings] = useState(false);
+    const [showMessaging, setShowMessaging] = useState(false);
+    const [showChannel, setShowChannel] = useState(false);
+    const [showAuth, setShowAuth] = useState(false);
+    const [showGitHub, setShowGitHub] = useState(false);
+    const [showChatSidebar, setShowChatSidebar] = useState(false);
+    const [showAdminPanel, setShowAdminPanel] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
@@ -476,17 +492,34 @@ export function AnimatedAIChat() {
     };
 
     return (
-        <div className="h-screen flex w-full bg-black text-white relative overflow-hidden">
+        <div className="h-screen flex w-full text-white relative overflow-hidden">
             <BackgroundPlus themeId={currentTheme} />
 
+            {/* User Sidebar - Always visible */}
+            <UserSidebar
+                onOpenSettings={() => setShowAccountSettings(true)}
+                onOpenMessages={() => setShowMessaging(true)}
+                onOpenChannel={() => setShowChannel(true)}
+                onOpenGitHub={() => setShowGitHub(true)}
+                onOpenAuth={() => setShowAuth(true)}
+                onOpenAIChat={() => setShowChatSidebar(true)}
+                onOpenAdmin={() => setShowAdminPanel(true)}
+            />
+
+            {/* Chat Sidebar - Slides in next to user sidebar */}
+            <AnimatePresence>
+                {showChatSidebar && (
+                    <ChatSidebar onClose={() => setShowChatSidebar(false)} />
+                )}
+            </AnimatePresence>
             {/* Collapsed Chat Tab - Shows when chat is hidden */}
             <AnimatePresence>
                 {isChatCollapsed && (
                     <motion.div
-                        className="fixed left-0 top-1/2 -translate-y-1/2 z-50"
-                        initial={{ x: -100 }}
-                        animate={{ x: 0 }}
-                        exit={{ x: -100 }}
+                        initial={{ opacity: 0, x: -100 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -100 }}
+                        className="fixed left-0 bottom-4 z-[55]"
                     >
                         <button
                             onClick={() => setIsChatCollapsed(false)}
@@ -499,9 +532,10 @@ export function AnimatedAIChat() {
                 )}
             </AnimatePresence>
 
-            {/* Left/Center: Chat Area - Made smaller for planning panel */}
+            {/* Left/Bottom: Chat Area - Positioned at bottom-left */}
             <motion.div 
-                className="flex-1 flex flex-col relative z-10 max-w-3xl mx-6"
+                className="fixed bottom-4 z-10 w-[900px] max-h-[450px] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+                style={{ left: '3%' }}
                 animate={{
                     x: isChatCollapsed ? -800 : 0,
                     opacity: isChatCollapsed ? 0 : 1
@@ -512,17 +546,18 @@ export function AnimatedAIChat() {
                     damping: 30
                 }}
             >
+
                 {/* Chat Messages Area - Scrollable with fixed height */}
-                <div className="flex-1 w-full overflow-y-auto overflow-x-hidden pb-4 pt-8 flex flex-col-reverse">
-                    <div className="space-y-4 flex flex-col w-full px-4">
+                <div className="flex-1 w-full overflow-y-auto overflow-x-hidden pb-2 pt-2 min-h-0">
+                    <div className="space-y-4 flex flex-col w-full px-4 min-h-full justify-end">
                         {messages.length === 0 ? (
                             <div className="flex-1" />
                         ) : (
-                            <AnimatePresence initial={false}>
+                            <div className="space-y-4">
                                 {messages.map((msg, idx) => (
                                     <MessageBubble key={`${idx}-${msg.role}`} message={msg} />
                                 ))}
-                            </AnimatePresence>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -634,20 +669,17 @@ export function AnimatedAIChat() {
                         )}
                     </AnimatePresence>
 
-                    <div className="p-4 border-t border-white/[0.05] flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
+                    <div className="p-3 border-t border-white/[0.05] flex items-center justify-between gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2">
                             <motion.button
                                 type="button"
                                 onClick={handleAttachFile}
                                 whileTap={{ scale: 0.94 }}
-                                className="p-2 text-white/40 hover:text-white/90 rounded-lg transition-colors relative group"
+                                className="p-2 text-white/40 hover:text-white/90 rounded-lg transition-colors"
                             >
                                 <Paperclip className="w-4 h-4" />
-                                <motion.span
-                                    className="absolute inset-0 bg-white/[0.05] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                    layoutId="button-highlight"
-                                />
                             </motion.button>
+                            
                             <motion.button
                                 type="button"
                                 data-command-button
@@ -657,144 +689,159 @@ export function AnimatedAIChat() {
                                 }}
                                 whileTap={{ scale: 0.94 }}
                                 className={cn(
-                                    "p-2 text-white/40 hover:text-white/90 rounded-lg transition-colors relative group",
+                                    "p-2 text-white/40 hover:text-white/90 rounded-lg transition-colors",
                                     showCommandPalette && "bg-white/10 text-white/90"
                                 )}
                             >
                                 <Command className="w-4 h-4" />
-                                <motion.span
-                                    className="absolute inset-0 bg-white/[0.05] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                    layoutId="button-highlight"
-                                />
                             </motion.button>
                         </div>
-                        
-                        {/* AI Thinking Indicator */}
-                        {isTyping && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20"
+
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* AI Thinking Indicator */}
+                            {isTyping && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20"
+                                >
+                                    <Sparkles className="w-3.5 h-3.5 text-violet-400 animate-pulse" />
+                                    <span className="text-xs text-violet-300">AI Thinking...</span>
+                                </motion.div>
+                            )}
+
+                            <motion.button
+                                type="button"
+                                onClick={() => setIsChatCollapsed(true)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="p-2 rounded-lg text-sm font-medium transition-all bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                                title="Hide Chat"
                             >
-                                <Sparkles className="w-3.5 h-3.5 text-violet-400 animate-pulse" />
-                                <span className="text-xs text-violet-300">AI Thinking...</span>
-                            </motion.div>
-                        )}
+                                <ChevronLeft className="w-4 h-4" />
+                            </motion.button>
 
-                        {/* Collapse Chat Button */}
-                        <motion.button
-                            type="button"
-                            onClick={() => setIsChatCollapsed(true)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 rounded-lg text-sm font-medium transition-all bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
-                            title="Hide Chat"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                        </motion.button>
+                            <motion.button
+                                type="button"
+                                onClick={() => setShowThemeSelector(true)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="p-2 rounded-lg text-sm font-medium transition-all bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                                title="Change Theme"
+                            >
+                                <Palette className="w-4 h-4" />
+                            </motion.button>
 
-                        {/* Planning Panel Toggle Button */}
-                        <motion.button
-                            type="button"
-                            onClick={() => setShowPlanningPanel(!showPlanningPanel)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                                "p-2 rounded-lg text-sm font-medium transition-all",
-                                showPlanningPanel
-                                    ? "bg-violet-500/20 text-violet-300"
-                                    : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
-                            )}
-                            title="Toggle AI Planner"
-                        >
-                            <LayoutList className="w-4 h-4" />
-                        </motion.button>
+                            <motion.button
+                                type="button"
+                                onClick={() => setShowPlanningPanel(!showPlanningPanel)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={cn(
+                                    "p-2 rounded-lg text-sm font-medium transition-all",
+                                    showPlanningPanel
+                                        ? "bg-violet-500/20 text-violet-300"
+                                        : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                                )}
+                                title="Toggle AI Planner"
+                            >
+                                <LayoutList className="w-4 h-4" />
+                            </motion.button>
 
-                        {/* Code Toggle Button */}
-                        <motion.button
-                            type="button"
-                            onClick={() => setShowCode(!showCode)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                                "p-2 rounded-lg text-sm font-medium transition-all",
-                                showCode
-                                    ? "bg-violet-500/20 text-violet-300"
-                                    : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
-                            )}
-                            title="Toggle Code Viewer"
-                        >
-                            <Code2 className="w-4 h-4" />
-                        </motion.button>
+                            <motion.button
+                                type="button"
+                                onClick={() => setShowCode(!showCode)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={cn(
+                                    "p-2 rounded-lg text-sm font-medium transition-all",
+                                    showCode
+                                        ? "bg-violet-500/20 text-violet-300"
+                                        : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                                )}
+                                title="Toggle Code Viewer"
+                            >
+                                <Code2 className="w-4 h-4" />
+                            </motion.button>
 
-                        {/* Terminal/Debug Panel Toggle Button */}
-                        <motion.button
-                            type="button"
-                            onClick={() => setShowBottomPanel(!showBottomPanel)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                                "p-2 rounded-lg text-sm font-medium transition-all",
-                                showBottomPanel
-                                    ? "bg-violet-500/20 text-violet-300"
-                                    : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
-                            )}
-                            title="Toggle Terminal/Debug"
-                        >
-                            <Terminal className="w-4 h-4" />
-                        </motion.button>
+                            <motion.button
+                                type="button"
+                                onClick={() => setShowBottomPanel(!showBottomPanel)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={cn(
+                                    "p-2 rounded-lg text-sm font-medium transition-all",
+                                    showBottomPanel
+                                        ? "bg-violet-500/20 text-violet-300"
+                                        : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                                )}
+                                title="Toggle Terminal/Debug"
+                            >
+                                <Terminal className="w-4 h-4" />
+                            </motion.button>
 
-                        {/* iPhone Simulator Toggle Button */}
-                        <motion.button
-                            type="button"
-                            onClick={() => setShowIPhone(!showIPhone)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                                "p-2 rounded-lg text-sm font-medium transition-all",
-                                showIPhone
-                                    ? "bg-blue-500/20 text-blue-300"
-                                    : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
-                            )}
-                            title="Toggle iPhone Simulator"
-                        >
-                            <Smartphone className="w-4 h-4" />
-                        </motion.button>
+                            <motion.button
+                                type="button"
+                                onClick={() => setShowIPhone(!showIPhone)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={cn(
+                                    "p-2 rounded-lg text-sm font-medium transition-all",
+                                    showIPhone
+                                        ? "bg-blue-500/20 text-blue-300"
+                                        : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                                )}
+                                title="Toggle iPhone Simulator"
+                            >
+                                <Smartphone className="w-4 h-4" />
+                            </motion.button>
 
-                        {/* Android Simulator Toggle Button */}
-                        <motion.button
-                            type="button"
-                            onClick={() => setShowAndroid(!showAndroid)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                                "p-2 rounded-lg text-sm font-medium transition-all",
-                                showAndroid
-                                    ? "bg-green-500/20 text-green-300"
-                                    : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
-                            )}
-                            title="Toggle Android Simulator"
-                        >
-                            <Smartphone className="w-4 h-4" />
-                        </motion.button>
+                            <motion.button
+                                type="button"
+                                onClick={() => setShowAndroid(!showAndroid)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={cn(
+                                    "p-2 rounded-lg text-sm font-medium transition-all",
+                                    showAndroid
+                                        ? "bg-green-500/20 text-green-300"
+                                        : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                                )}
+                                title="Toggle Android Simulator"
+                            >
+                                <Smartphone className="w-4 h-4" />
+                            </motion.button>
 
-                        {/* Toggle All Button */}
-                        <motion.button
-                            type="button"
-                            onClick={toggleAll}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                                "p-2 rounded-lg text-sm font-medium transition-all",
-                                showCode && showBottomPanel && showIPhone && showAndroid
-                                    ? "bg-violet-500/20 text-violet-300"
-                                    : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
-                            )}
-                            title="Toggle All Panels"
-                        >
-                            <Maximize2 className="w-4 h-4" />
-                        </motion.button>
+                            <motion.button
+                                type="button"
+                                onClick={toggleAll}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={cn(
+                                    "p-2 rounded-lg text-sm font-medium transition-all",
+                                    showCode && showBottomPanel && showIPhone && showAndroid
+                                        ? "bg-violet-500/20 text-violet-300"
+                                        : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                                )}
+                                title="Toggle All Panels"
+                            >
+                                <Maximize2 className="w-4 h-4" />
+                            </motion.button>
+
+                            <div className="w-px h-6 bg-white/10" />
+
+                            <motion.button
+                                type="button"
+                                onClick={() => setShowChannel(true)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="p-2 rounded-lg text-sm font-medium transition-all bg-violet-500/10 text-violet-300 hover:bg-violet-500/20"
+                                title="Open Channels"
+                            >
+                                <Hash className="w-4 h-4" />
+                            </motion.button>
+                        </div>
 
                         <motion.button
                             type="button"
@@ -819,36 +866,6 @@ export function AnimatedAIChat() {
                         </motion.button>
                     </div>
                 </motion.div>
-
-                {messages.length === 0 && (
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                        {commandSuggestions.map((suggestion, index) => (
-                            <motion.button
-                                key={suggestion.prefix}
-                                onClick={() => selectCommandSuggestion(index)}
-                                className="flex items-center gap-2 px-3 py-2 bg-white/[0.02] hover:bg-white/[0.05] rounded-lg text-sm text-white/60 hover:text-white/90 transition-all relative group"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                            >
-                                {suggestion.icon}
-                                <span>{suggestion.label}</span>
-                                <motion.div
-                                    className="absolute inset-0 border border-white/[0.05] rounded-lg"
-                                    initial={false}
-                                    animate={{
-                                        opacity: [0, 1],
-                                        scale: [0.98, 1],
-                                    }}
-                                    transition={{
-                                        duration: 0.3,
-                                        ease: "easeOut",
-                                    }}
-                                />
-                            </motion.button>
-                        ))}
-                    </div>
-                )}
             </div>
             </motion.div>
 
@@ -1076,6 +1093,69 @@ export function AnimatedAIChat() {
                     )}
                 </AnimatePresence>
             )}
+
+            {/* Theme Picker Modal */}
+            <AnimatePresence>
+                {showThemeSelector && (
+                    <ThemePicker
+                        currentTheme={currentTheme}
+                        onThemeChange={handleThemeChange}
+                        onClose={() => setShowThemeSelector(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Account Settings Modal */}
+            <AnimatePresence>
+                {showAccountSettings && (
+                    <AccountSettings
+                        currentTheme={currentTheme}
+                        onThemeChange={handleThemeChange}
+                        onClose={() => setShowAccountSettings(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Messaging Panel */}
+            <AnimatePresence>
+                {showMessaging && (
+                    <MessagingPanel
+                        mode="messages"
+                        onClose={() => setShowMessaging(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Channel Panel */}
+            <AnimatePresence>
+                {showChannel && (
+                    <MessagingPanel
+                        mode="channel"
+                        onClose={() => setShowChannel(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Auth Modal */}
+            <AnimatePresence>
+                {showAuth && (
+                    <AuthModal onClose={() => setShowAuth(false)} />
+                )}
+            </AnimatePresence>
+
+            {/* GitHub Panel */}
+            <AnimatePresence>
+                {showGitHub && (
+                    <GitHubPanel onClose={() => setShowGitHub(false)} />
+                )}
+            </AnimatePresence>
+
+            {/* Admin Panel */}
+            <AnimatePresence>
+                {showAdminPanel && (
+                    <AdminPanel onClose={() => setShowAdminPanel(false)} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

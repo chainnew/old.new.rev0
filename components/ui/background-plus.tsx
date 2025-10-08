@@ -29,38 +29,12 @@ export function BackgroundPlus({ themeId }: BackgroundPlusProps) {
   const theme = getTheme(currentTheme);
 
   return (
-    <div className={`fixed inset-0 -z-10 overflow-hidden bg-gradient-to-br ${theme.background}`}>
-      {/* Animated plus pattern */}
-      {Array.from({ length: 50 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute"
-          initial={{
-            opacity: 0,
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
-          }}
-          animate={{
-            opacity: [0.1, 0.3, 0.1],
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
-          }}
-          transition={{
-            duration: Math.random() * 20 + 10,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20">
-            <path
-              d="M10 0v20M0 10h20"
-              stroke={theme.dotColor}
-              strokeWidth="1"
-            />
-          </svg>
-        </motion.div>
-      ))}
-    </div>
+    <div 
+      className="fixed inset-0 -z-10 overflow-hidden"
+      style={{
+        background: `linear-gradient(to bottom right, ${theme.backgroundGradient.from}, ${theme.backgroundGradient.via}, ${theme.backgroundGradient.to})`
+      }}
+    />
   );
 }
 

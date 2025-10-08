@@ -116,7 +116,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    zoom: 0.75;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
   }
 }
