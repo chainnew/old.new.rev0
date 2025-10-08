@@ -1,0 +1,105 @@
+diff --git a/xen/arch/arm/traps.c b/xen/arch/arm/traps.c
+index 0000000..abcdef1 100644
+--- a/xen/arch/arm/traps.c
++++ b/xen/arch/arm/traps.c
+@@ -10,6 +10,8 @@
+ #include <asm/current.h>
+ #include <asm/processor.h>
+ #include <asm/traps.h>
++#include <asm/esr.h>  /* For ESR_ELx decoding */
++#include <asm/guest_access.h>  /* For guest memory access checks */
+ 
+ /* Existing ARM trap dispatch */
+ void do_trap_serror(struct cpu_user_regs *regs, unsigned long esr)
+@@ -50,6 +52,45 @@ void do_trap_serror(struct cpu_user_regs *regs, unsigned long esr)
+     /* ... existing SError handling ... */
+ }
+ 
++/*
++ * Migrated from x86 do_page_fault: Handle data aborts (prefetch/data faults)
++ * on ARM64. Preserve Xen semantics: Check if in guest context, emulate if
++ * needed, or inject to guest. Key changes:
++ * - Use ESR_ELx for fault type (x86 uses error_code).
++ * - ARM64 uses FAR_EL2 for fault address (x86 uses CR2).
++ * - Handle EL1/EL0 vs EL2 differences; no IDT, uses vector table.
++ * - Memory model: ARM64 weak memory, add barriers if needed for ordering.
++ */
++void do_trap_data_abort_guest(struct cpu_user_regs *regs,
++                              union hsr hsr, unsigned long addr)
++{
++    unsigned long esr = hsr.bits;  /* Equivalent to x86 error_code */
++    vaddr_t gva = addr;  /* Fault address from FAR_EL2 */
++    struct vcpu *v = current;
++
++    /* Preserve x86 logic: If not in guest mode, handle as host fault */
++    if ( !guest_mode(regs) )
++    {
++        do_bad_data_abort(regs, hsr, addr);  /* ARM-specific bad abort */
++        return;
++    }
++
++    /* Check for instruction vs data abort (x86 distinguishes PF vs others) */
++    if ( hsr.ec == HSR_EC_DATA_ABORT_LOWER_EL )  /* Guest data abort */
++    {
++        /* Emulate or inject fault to guest, preserving access checks */
++        if ( handle_guest_data_abort(v, regs, gva, esr) )
++            return;
++
++        /* Fallback: Inject page fault to guest (semantic equivalent) */
++        inject_dabt(v, gva, esr);  /* ARM64 inject via HSR/FAR */
++    }
++    else if ( hsr.ec == HSR_EC_INSTR_ABORT_LOWER_EL )
++    {
++        /* Handle prefetch abort similarly */
++        inject_iabt(v, gva, esr);
++    }
++
++    /* Add ARM64-specific barrier for memory consistency (x86 implicit) */
++    dsb(sy);
++}
++
+ /* Existing ARM undefined instruction handler */
+ void do_trap_undefined(struct cpu_user_regs *regs, unsigned long esr)
+ {
+@@ -100,6 +141,18 @@ asmlinkage void do_trap(struct cpu_user_regs *regs, unsigned long syndrome,
+     switch ( syndrome >> ESR_ELx_EC_SHIFT )
+     {
+     case HSR_EC_SERROR:
++        /* Enhanced dispatch for migrated x86 traps */
++        do_trap_serror(regs, syndrome);
++        break;
++    case HSR_EC_DATA_ABORT_LOWER_EL:
++    case HSR_EC_DATA_ABORT_SAME_EL:
++        /* Route to migrated page fault logic */
++        do_trap_data_abort_guest(regs, (union hsr){ .bits = syndrome }, read_sysreg(far_el2));
++        break;
++    case HSR_EC_INSTR_ABORT_LOWER_EL:
++    case HSR_EC_INSTR_ABORT_SAME_EL:
++        /* Similar for instruction faults */
++        do_trap_instr_abort_guest(regs, (union hsr){ .bits = syndrome }, read_sysreg(far_el2));
+         break;
+     case HSR_EC_UNKNOWN:
+         do_trap_undefined(regs, syndrome);
+@@ -150,3 +203,24 @@ void show_execution_state(struct cpu_user_regs *regs)
+     /* ... existing print logic ... */
+ }
++
++/*
++ * Additional migrated handler for x86 #GP (general protection) equivalent:
++ * ARM64 uses permission faults or SError for similar semantics.
++ * Enhancements from super_themes_enhanced.json: Add logging for debug.
++ */
++void do_trap_permission_fault(struct cpu_user_regs *regs,
++                              union hsr hsr, unsigned long addr)
++{
++    if ( !is_guest(regs) )
++    {
++        printk(XENLOG_ERR "Host permission fault at 0x%lx (ESR=0x%lx)\n",
++               addr, hsr.bits);  /* Enhanced logging */
++        domain_crash(current->domain);
++        return;
++    }
++
++    /* Inject to guest, preserving x86 #GP injection semantics */
++    inject_abt(current, addr, hsr.bits);
++}
