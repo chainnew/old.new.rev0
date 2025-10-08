@@ -31,6 +31,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Smartphone,
+    Palette,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react"
@@ -41,6 +42,7 @@ import { CodeWindow } from "./code-window";
 import { BottomPanel } from "./bottom-panel";
 import { IPhoneSimulator } from "./iphone-simulator";
 import { AndroidSimulator } from "./android-simulator";
+import { themes, saveTheme, loadTheme, getTheme } from "@/lib/themes";
 
 interface UseAutoResizeTextareaProps {
     minHeight: number;
@@ -191,10 +193,20 @@ export function AnimatedAIChat() {
     const [isChatCollapsed, setIsChatCollapsed] = useState(false);
     const [showIPhone, setShowIPhone] = useState(false);
     const [showAndroid, setShowAndroid] = useState(false);
+    const [currentTheme, setCurrentTheme] = useState('midnight');
+    const [showThemeSelector, setShowThemeSelector] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
+        const savedTheme = loadTheme();
+        setCurrentTheme(savedTheme);
     }, []);
+
+    const handleThemeChange = (themeId: string) => {
+        setCurrentTheme(themeId);
+        saveTheme(themeId);
+        setShowThemeSelector(false);
+    };
 
     const toggleAll = () => {
         const newState = !(showCode && showBottomPanel && showIPhone && showAndroid);
@@ -465,7 +477,7 @@ export function AnimatedAIChat() {
 
     return (
         <div className="h-screen flex w-full bg-black text-white relative overflow-hidden">
-            <BackgroundPlus />
+            <BackgroundPlus themeId={currentTheme} />
 
             {/* Collapsed Chat Tab - Shows when chat is hidden */}
             <AnimatePresence>

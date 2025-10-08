@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { RefreshCw, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sanitizeUrl } from "@/lib/sanitize-url";
 
 export function IPhoneSimulator() {
   const [url, setUrl] = useState("http://localhost:3000");
@@ -11,7 +12,16 @@ export function IPhoneSimulator() {
 
   const refreshPreview = () => {
     const iframe = document.querySelector('[data-iphone-frame]') as HTMLIFrameElement;
-    if (iframe) iframe.src = iframe.src;
+    if (iframe) iframe.src = sanitizeUrl(iframe.src);
+  };
+
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl);
+  };
+
+  const loadUrl = () => {
+    const iframe = document.querySelector('[data-iphone-frame]') as HTMLIFrameElement;
+    if (iframe) iframe.src = sanitizeUrl(url);
   };
 
   return (
@@ -21,11 +31,10 @@ export function IPhoneSimulator() {
         <input
           type="text"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => handleUrlChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              const iframe = document.querySelector('[data-iphone-frame]') as HTMLIFrameElement;
-              if (iframe) iframe.src = url;
+              loadUrl();
             }
           }}
           className="w-[300px] px-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded text-white/80 placeholder-white/30 focus:outline-none focus:border-blue-500/50 font-mono"
@@ -166,7 +175,7 @@ export function IPhoneSimulator() {
                 <div className="flex-1 relative">
                   <iframe
                     data-iphone-frame
-                    src={url}
+                    src={sanitizeUrl(url)}
                     className="w-full h-full bg-white border-0"
                     sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups"
                     title="iPhone Preview"
@@ -193,7 +202,7 @@ export function IPhoneSimulator() {
               // Direct App View
               <iframe
                 data-iphone-frame
-                src={url}
+                src={sanitizeUrl(url)}
                 className="w-full h-full bg-white border-0"
                 sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups"
                 title="iPhone Preview"

@@ -8,6 +8,7 @@ import {
   ChevronRight, ChevronDown, Search, MoreVertical,
   GripVertical, Lock, Unlock, Monitor, RefreshCw
 } from "lucide-react";
+import { sanitizeUrl } from "@/lib/sanitize-url";
 import { cn } from "@/lib/utils";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -331,7 +332,7 @@ export function CodeWindow() {
               <button
                 onClick={() => {
                   const iframe = document.querySelector('[data-preview-frame]') as HTMLIFrameElement;
-                  if (iframe) iframe.src = iframe.src;
+                  if (iframe) iframe.src = sanitizeUrl(iframe.src);
                 }}
                 className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white/80 transition-colors"
                 title="Refresh preview"
@@ -424,7 +425,7 @@ export function CodeWindow() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const iframe = document.querySelector('[data-preview-frame]') as HTMLIFrameElement;
-                    if (iframe) iframe.src = previewUrl;
+                    if (iframe) iframe.src = sanitizeUrl(previewUrl);
                   }
                 }}
                 className="flex-1 px-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 font-mono"
@@ -433,7 +434,7 @@ export function CodeWindow() {
               <button
                 onClick={() => {
                   const iframe = document.querySelector('[data-preview-frame]') as HTMLIFrameElement;
-                  if (iframe) iframe.src = previewUrl;
+                  if (iframe) iframe.src = sanitizeUrl(previewUrl);
                 }}
                 className="px-3 py-1.5 text-xs bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 rounded transition-colors"
               >
@@ -443,7 +444,7 @@ export function CodeWindow() {
             <div className="flex-1 relative">
               <iframe
                 data-preview-frame
-                src={previewUrl}
+                src={sanitizeUrl(previewUrl)}
                 className="absolute inset-0 w-full h-full bg-white"
                 sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups"
                 title="Browser Preview"
