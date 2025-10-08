@@ -30,6 +30,7 @@ import {
     LayoutList,
     ChevronLeft,
     ChevronRight,
+    Smartphone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react"
@@ -38,6 +39,8 @@ import { BackgroundPlus } from "./background-plus";
 import Plan from "./agent-plan";
 import { CodeWindow } from "./code-window";
 import { BottomPanel } from "./bottom-panel";
+import { IPhoneSimulator } from "./iphone-simulator";
+import { AndroidSimulator } from "./android-simulator";
 
 interface UseAutoResizeTextareaProps {
     minHeight: number;
@@ -186,15 +189,19 @@ export function AnimatedAIChat() {
     const [isRightPanelLocked, setIsRightPanelLocked] = useState(false);
     const [isResizingRightPanel, setIsResizingRightPanel] = useState(false);
     const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+    const [showIPhone, setShowIPhone] = useState(false);
+    const [showAndroid, setShowAndroid] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
     const toggleAll = () => {
-        const newState = !(showCode && showBottomPanel);
+        const newState = !(showCode && showBottomPanel && showIPhone && showAndroid);
         setShowCode(newState);
         setShowBottomPanel(newState);
+        setShowIPhone(newState);
+        setShowAndroid(newState);
     };
 
     const handleMouseDown = () => {
@@ -726,6 +733,40 @@ export function AnimatedAIChat() {
                             <Terminal className="w-4 h-4" />
                         </motion.button>
 
+                        {/* iPhone Simulator Toggle Button */}
+                        <motion.button
+                            type="button"
+                            onClick={() => setShowIPhone(!showIPhone)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={cn(
+                                "p-2 rounded-lg text-sm font-medium transition-all",
+                                showIPhone
+                                    ? "bg-blue-500/20 text-blue-300"
+                                    : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                            )}
+                            title="Toggle iPhone Simulator"
+                        >
+                            <Smartphone className="w-4 h-4" />
+                        </motion.button>
+
+                        {/* Android Simulator Toggle Button */}
+                        <motion.button
+                            type="button"
+                            onClick={() => setShowAndroid(!showAndroid)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={cn(
+                                "p-2 rounded-lg text-sm font-medium transition-all",
+                                showAndroid
+                                    ? "bg-green-500/20 text-green-300"
+                                    : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
+                            )}
+                            title="Toggle Android Simulator"
+                        >
+                            <Smartphone className="w-4 h-4" />
+                        </motion.button>
+
                         {/* Toggle All Button */}
                         <motion.button
                             type="button"
@@ -734,7 +775,7 @@ export function AnimatedAIChat() {
                             whileTap={{ scale: 0.95 }}
                             className={cn(
                                 "p-2 rounded-lg text-sm font-medium transition-all",
-                                showCode && showBottomPanel
+                                showCode && showBottomPanel && showIPhone && showAndroid
                                     ? "bg-violet-500/20 text-violet-300"
                                     : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
                             )}
@@ -959,6 +1000,66 @@ export function AnimatedAIChat() {
                             }}
                         >
                             <BottomPanel onClose={() => setShowBottomPanel(false)} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            )}
+
+            {/* iPhone Simulator - Slides in from right */}
+            {isMounted && (
+                <AnimatePresence>
+                    {showIPhone && (
+                        <motion.div 
+                            className="fixed right-0 top-0 bottom-0 w-[600px] z-[70] shadow-2xl"
+                            initial={{ opacity: 0, x: 600 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 600 }}
+                            transition={{ 
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 30
+                            }}
+                        >
+                            <div className="relative h-full">
+                                <button
+                                    onClick={() => setShowIPhone(false)}
+                                    className="absolute top-4 right-4 z-[80] p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-colors"
+                                    title="Close iPhone Simulator"
+                                >
+                                    <XIcon className="w-4 h-4 text-white/70" />
+                                </button>
+                                <IPhoneSimulator />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            )}
+
+            {/* Android Simulator - Slides in from right */}
+            {isMounted && (
+                <AnimatePresence>
+                    {showAndroid && (
+                        <motion.div 
+                            className="fixed right-0 top-0 bottom-0 w-[600px] z-[70] shadow-2xl"
+                            initial={{ opacity: 0, x: 600 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 600 }}
+                            transition={{ 
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 30
+                            }}
+                        >
+                            <div className="relative h-full">
+                                <button
+                                    onClick={() => setShowAndroid(false)}
+                                    className="absolute top-4 right-4 z-[80] p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-colors"
+                                    title="Close Android Simulator"
+                                >
+                                    <XIcon className="w-4 h-4 text-white/70" />
+                                </button>
+                                <AndroidSimulator />
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
