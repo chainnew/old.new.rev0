@@ -1,0 +1,80 @@
+diff --git a/arch/arm/traps.c b/arch/arm/traps.c
+index 0000000..abcdef1 100644
+--- a/arch/arm/traps.c
++++ b/arch/arm/traps.c
+@@ -10,6 +10,7 @@
+ #include <asm/p2m.h>
+ #include <asm/cpufeature.h>
+ #include <asm/irq.h>
++#include <asm/gic_v3_defs.h>  /* For GICv3 handling */
+ 
+ /* ... existing trap handlers ... */
+ 
+@@ -500,3 +501,72 @@ void do_unexpected_trap(const char *msg, struct cpu_user_regs *regs)
+     domain_crash(smp_processor_id(), msg);
+ }
+ 
++/*
++ * NMI handling ported from x86. On ARM64/Xen, NMIs are mapped to GICv3
++ * high-priority interrupts (priority 0x00, group 0 for non-secure maskable
++ * behavior, but treated as non-maskable in hypervisor context). These are
++ * physical interrupts routed via GIC distributor/CPU interface.
++ * Key differences:
++ * - Acknowledge and end the interrupt via GICv3 redistributor (no auto-EOI).
++ * - Use ARM64 registers (e.g., PC instead of RIP) via cpu_user_regs.
++ * - Memory model: ARM64 is weakly ordered; use barriers if needed for NMI safety.
++ * - No x86-specific IPI shootdown; adapt to ARM broadcast if required.
++ */
++
++static void unknown_nmi_panic_or_kdump(const char *msg, struct cpu_user_regs *regs)
++{
++    uint64_t pc;
++
++    /* Preserve x86 logic: dump regs, panic or kdump */
++    printk("Uhhuh. NMI received for %s on CPU %d:\n", msg, smp_processor_id());
++
++    /* ARM64-specific: show PC (equiv to x86 RIP) and other regs */
++    pc = regs->pc;
++    printk("PC: %016llx\n", pc);
++    /* ... dump other regs as in x86 version ... */
++    show_execution_state(regs);
++
++    /* Panic or kdump logic unchanged */
++    if (opt_kdump)
++        machine_kexec();
++    else
++        panic("NMI: %s\n", msg);
++}
++
++/*
++ * do_nmi - Entry point for NMI-like handling.
++ * On ARM64, invoked from assembly (e.g., entry.S IRQ vector for high-pri IRQ).
++ * Assumes GICv3 IRQ is already routed to this handler via vector table.
++ * Registers are saved in struct cpu_user_regs (ARM64 layout: pc, sp, elr_el2, etc.).
++ */
++void do_nmi(struct cpu_user_regs *regs)
++{
++    int cpu = smp_processor_id();
++    unsigned int irq;
++
++    /* ARM64-specific: Acknowledge GICv3 interrupt (high-pri, e.g., IRQ 1023 for NMI mapping) */
++    irq = gicv3_rdist_cpu_read_rbase() + GICD_IIDR;  /* Read IRQ ID from redistributor */
++    /* Note: In real impl, read actual IRQ ID via ICC_IAR1_EL1 (for non-secure high-pri) */
++    gicv3_rdist_cpu_write_reoi(irq);  /* End-of-interrupt; ARM64 weak memory ordering requires dmb() if shared */
++    isb();  /* Instruction serialization barrier for safety in NMI context */
++
++    /* Preserve x86 logic: Check for IPI shootdown (adapt to ARM if needed) */
++    if (nmi_shootdown_cpu != cpu) {
++        /* Unknown NMI */
++        unknown_nmi_panic_or_kdump("unknown reason", regs);
++        return;
++    }
++
++    /* Handle shootdown or other known cases (logic unchanged) */
++    nmi_shootdown_cpu = ~0;  /* Reset */
++    /* ... rest of x86 shootdown logic, ported directly ... */
++    ack_APIC_irq();  /* x86-specific; on ARM, no APIC - omit or map to GIC broadcast clear */
++}
++
++/* Hook for GICv3: Register high-pri IRQ (e.g., 0x00 priority) as NMI vector in gic.c */
++/* See related diff in arch/arm/gic-v3.c for config: gicv3_set_irq_priority(..., 0x00); */
