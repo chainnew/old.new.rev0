@@ -115,43 +115,93 @@ Keep it conversational and helpful."""
         return response.choices[0].message.content
     
     def _extract_scope(self, message: str) -> Dict[str, Any]:
-        """Extract structured scope from user message using Grok."""
-        prompt = f"""User request: "{message}"
+        """Extract structured scope from user message using Grok-4-Fast-Reasoning."""
+        prompt = f"""You are Grok-4-Fast-Reasoning, an expert AI for full-stack development scoping.
 
-Extract a structured project scope in JSON format:
+User Request: "{message}"
+
+**Task**: Flesh out a complete project scope using the 6 Must-Haves breakdown approach.
+
+**The Stack That Ships (2025 Defaults)**:
+- Frontend (MVP): Next.js 14+ App Router + TypeScript + Tailwind CSS + Shadcn/ui + TanStack Query + Zustand + React Hook Form + Zod + Vercel + Clerk/NextAuth + Sentry
+- Backend (Scale-Up): Node.js/Express/FastAPI + TypeScript/Python + Prisma/SQLAlchemy + PostgreSQL + Redis + BullMQ + JWT + Docker + Railway/Fly.io + GitHub Actions + Stripe
+- Rules: Pick one meta-framework (Next.js default); Tailwind first; Copy-paste Shadcn; TanStack for server state; RHF+Zod for forms; Mobile-first; Error boundaries
+
+**Output JSON** with these 6 fields:
 {{
-  "project": "ProjectName",
-  "goal": "Clear 1-2 sentence goal",
+  "project": "ProjectName (CamelCase, descriptive)",
+  "goal": "Clear 2-3 sentence goal with pain point solved",
   "tech_stack": {{
-    "frontend": "Framework",
-    "backend": "Framework",
-    "database": "DB"
+    "frontend": "Next.js 14+ App Router + TS + Tailwind + Shadcn",
+    "backend": "FastAPI/Node + Prisma + PostgreSQL",
+    "database": "PostgreSQL (Railway)",
+    "auth": "Clerk/NextAuth",
+    "payments": "Stripe" (if e-comm),
+    "deployment": "Vercel (frontend) + Railway (backend)"
   }},
-  "features": ["feature1", "feature2", ...],
-  "comps": ["competitor1", "competitor2"],
-  "timeline": "1-2h" or "1 day" etc
+  "features": ["feature1 with details", "feature2", ...],
+  "comps": ["Competitor1 (strength/gap)", "Competitor2", ...],
+  "timeline": "1-2h MVP" or "1 day prod",
+  "outcome": "Live repo on localhost:3000 + Vercel URL + 80% test coverage",
+  "scope_of_works": {{
+    "in_scope": ["Research", "Design", "Implementation"],
+    "out_scope": ["Native apps", "Advanced analytics"],
+    "milestones": ["M1: Research done", "M2: Design specs", "M3: MVP on localhost:3000"],
+    "risks": ["Risk1 (mitigation)", ...],
+    "kpis": ["95% uptime", "Checkout <3s", "Lighthouse 90+"]
+  }}
 }}
 
-If user mentioned task tracking/dashboard similar to Trello, use TrackFlow as project name.
-Return ONLY valid JSON, no markdown."""
+**Special Cases**:
+- If task tracking/Trello: Use "TrackFlow" as project name
+- If e-commerce/Stripe: Use "ECommerceStripeStore"
+- If vague: Assume web app MVP
+
+Return ONLY valid JSON, no markdown code blocks."""
         
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
+            temperature=0.3,
+            max_tokens=2000
         )
         
         try:
-            scope = json.loads(response.choices[0].message.content)
+            content = response.choices[0].message.content.strip()
+            # Clean markdown if present
+            if '```json' in content:
+                content = content.split('```json')[1].split('```')[0].strip()
+            elif '```' in content:
+                content = content.split('```')[1].split('```')[0].strip()
+            
+            scope = json.loads(content)
+            print(f"\n✅ Scope fleshed: {scope['project']}")
+            print(f"   Goal: {scope['goal'][:80]}...")
+            print(f"   Features: {len(scope.get('features', []))} items")
+            print(f"   Timeline: {scope.get('timeline', 'N/A')}\n")
             return scope
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"⚠️ JSON parse error: {e}")
             # Fallback to basic scope
             return {
                 "project": "UserProject",
                 "goal": message,
-                "tech_stack": {"frontend": "Next.js", "backend": "FastAPI"},
+                "tech_stack": {
+                    "frontend": "Next.js 14 + TS + Tailwind + Shadcn",
+                    "backend": "FastAPI",
+                    "database": "PostgreSQL"
+                },
                 "features": ["core functionality"],
-                "timeline": "1-2h"
+                "comps": ["Industry standard"],
+                "timeline": "1-2h",
+                "outcome": "MVP on localhost:3000",
+                "scope_of_works": {
+                    "in_scope": ["Research", "Design", "Implementation"],
+                    "out_scope": [],
+                    "milestones": ["M1: Setup", "M2: MVP", "M3: Deploy"],
+                    "risks": [],
+                    "kpis": ["Working prototype"]
+                }
             }
     
     def _populate_planner_tasks(self, swarm_id: str, scope: Dict[str, Any]) -> None:
@@ -248,37 +298,89 @@ Return ONLY valid JSON, no markdown."""
             }
     
     def _generate_subtasks(self, role: str, scope: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Generate role-specific subtasks using Grok."""
+        """Generate role-specific subtasks using Grok-4-Fast-Reasoning with modular breakdown."""
+        
+        project = scope.get('project', 'Project')
+        goal = scope.get('goal', 'Build application')
+        features = scope.get('features', [])
+        comps = scope.get('comps', [])
+        tech_stack = scope.get('tech_stack', {})
+        timeline = scope.get('timeline', '1-2h')
+        
         prompts = {
-            'research': f"""For project "{scope['project']}" with goal: {scope['goal']}
+            'research': f"""You are a Research Specialist agent in a swarm for project "{project}".
 
-Generate 3-4 research subtasks focusing on:
-- Understanding user requirements
-- Analyzing competitors: {', '.join(scope.get('comps', ['Trello', 'Asana']))}
-- Identifying tech stack fit for {scope.get('tech_stack', {}).get('frontend', 'Next.js')}
+Goal: {goal}
 
-Return JSON array of subtasks:
+Generate exactly 4 research subtasks as a JSON array. Focus on:
+1. Gathering user requirements (interviews/surveys for core flows)
+2. Analyzing competitor #{1 if comps else 'industry standard'}: {comps[0] if comps else 'N/A'} (features/pricing/gaps)
+3. Analyzing competitor #{2 if len(comps) > 1 else 'alternative'}: {comps[1] if len(comps) > 1 else 'N/A'} (pros/cons)
+4. Assessing stack fit: {tech_stack.get('frontend', 'Next.js')} + {tech_stack.get('backend', 'FastAPI')} (validate for scalability/security)
+
+**Output Format** (ONLY JSON array, no markdown):
 [
-  {{"id": "1.1", "title": "...", "description": "...", "priority": "high|medium|low", "tools": ["browser", "web-scraper"]}}
-]""",
+  {{
+    "id": "1.1",
+    "title": "Gather User Requirements (...)",
+    "description": "Interview/survey for core flows. Document pain points.",
+    "priority": "high",
+    "tools": ["browser", "communication-tool"]
+  }},
+  ... (3 more)
+]
+
+Make titles specific to {project}. Use MCP tools: browser, web-scraper, communication-tool, documentation-sites.""",
             
-            'design': f"""For project "{scope['project']}" using stack: {json.dumps(scope.get('tech_stack', {}))}
+            'design': f"""You are a Design Specialist agent in a swarm for project "{project}".
 
-Generate 3-4 design subtasks focusing on:
-- Wireframes for features: {', '.join(scope.get('features', []))}
-- Database schema design
-- API specifications
+Stack: {json.dumps(tech_stack)}
+Features: {', '.join(features[:3]) if features else 'TBD'}
 
-Return JSON array.""",
+Generate exactly 4 design subtasks as a JSON array. Focus on:
+1. Design wireframes (Figma/Shadcn for UI components)
+2. Design database schema (Prisma models with relations)
+3. Specify APIs (REST/GraphQL endpoints with validation)
+4. Outline integrations (e.g., Stripe sessions/webhooks, Auth flows)
+
+**Output Format** (ONLY JSON array):
+[
+  {{
+    "id": "2.1",
+    "title": "Design Wireframes for {features[0] if features else 'Main Features'}",
+    "description": "Create Figma mockups or Shadcn component specs.",
+    "priority": "high",
+    "tools": ["diagramming-tool", "shadcn-gen"]
+  }},
+  ... (3 more)
+]
+
+Use MCP tools: diagramming-tool, prisma-gen, api-designer, stripe-tool, db-sync.""",
             
-            'implementation': f"""For project "{scope['project']}" in timeline: {scope.get('timeline', '1-2h')}
+            'implementation': f"""You are an Implementation Specialist agent in a swarm for project "{project}".
 
-Generate 3-4 implementation subtasks focusing on:
-- Resource allocation
-- Development timeline
-- Risk assessment
+Timeline: {timeline}
+Scope: {scope.get('scope_of_works', {}).get('in_scope', ['Research', 'Design', 'Implementation'])}
 
-Return JSON array."""
+Generate exactly 4 implementation subtasks as a JSON array. Focus on:
+1. Resource allocation (Assign agents: Frontend/Backend/Deploy roles)
+2. Development timeline (Gantt chart: Setup → Code → Test → Deploy)
+3. Risk assessment (Identify risks like scaling/security + mitigations)
+4. Setup localhost:3000 & deploy prep (npx create-next-app; Vercel preview)
+
+**Output Format** (ONLY JSON array):
+[
+  {{
+    "id": "3.1",
+    "title": "Resource Allocation (3 Agents)",
+    "description": "Assign Frontend/Backend/Deploy roles to swarm agents.",
+    "priority": "medium",
+    "tools": ["orchestrator-assign"]
+  }},
+  ... (3 more)
+]
+
+Use MCP tools: orchestrator-assign, timeline-generator, risk-analyzer, code-gen, docker-build."""
         }
         
         prompt = prompts.get(role, prompts['implementation'])

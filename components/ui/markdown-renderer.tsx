@@ -152,6 +152,19 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           
           // Links
           a({ href, children }) {
+            // Special styling for planner links (swarm links)
+            if (href?.startsWith('/planner/')) {
+              return (
+                <a
+                  href={href}
+                  className="inline-flex items-center gap-2 px-4 py-2 my-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-105"
+                >
+                  <span className="text-lg">🚀</span>
+                  {children}
+                </a>
+              );
+            }
+            
             return (
               <a
                 href={href}

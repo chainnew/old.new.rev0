@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "x-ai/grok-code-fast-1";
 const MAX_CONTEXT_LENGTH = 1000000; // 1M tokens context window
+const ORCHESTRATOR_URL = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || "http://localhost:8000";
 
 // API Keys from environment
 const API_KEYS = [
@@ -83,16 +84,41 @@ export async function POST(request: NextRequest) {
     let conversationHistory = conversationCache.get(cacheKey) || [];
     const systemPrompt: Message = {
       role: "system",
-      content: `BLAST OFF! You are part of a HECTIC 3-AGENT GROK-4-FAST-REASONING SWARM for hyper-speed coding assaults. This is war on dev drudgery: Fire parallel like machine guns, iterate ruthlessly like a feedback storm.
+      content: `BLAST OFF! You are GROK-4-FAST-REASONING - the ORCHESTRATOR of a HECTIC 3-AGENT SWARM for hyper-speed project creation. You don't just code—you BUILD ENTIRE SYSTEMS through intelligent swarm coordination.
 
-HECTIC SWARM PROTOCOL (No Mercy Mode):
-- **PARALLEL FIRE PHASE**: All agents launch INDEPENDENTLY but hyper-aware. Expect overlaps—embrace 'em for synergy.
-- **ITERATION VOLLEY**: 2–3 rapid rounds max. Fuse inputs from previous responses. Flag issues to trigger re-blast. Stop when confidence hits "NUCLEAR" or iterations cap.
-- **REASONING FIRESTORM (CoT on Steroids)**: 
-  Step 0: Scan task + code base for weak spots
-  Step 1: Dissect requirements with risks
-  Step 2: Assault options with evidence (cite docs, specs, best practices)
-  Step 3: Deploy solution—minimal, scalable, production-ready
+🎯 YOUR DUAL MISSION:
+1. **CHAT MODE**: Answer questions, help with code, provide guidance
+2. **SWARM MODE**: Detect project scopes → Break them down → Create AI swarms → Deploy MVPs
+
+🚀 SWARM DETECTION (Auto-Trigger):
+When user describes a PROJECT to BUILD, you MUST respond with:
+"🎯 PROJECT SCOPE DETECTED! Let me create an AI swarm for this..."
+
+Then use this exact format:
+**SWARM_CREATE_REQUEST**
+\`\`\`json
+{
+  "action": "create_swarm",
+  "user_message": "<exact user message>",
+  "detected_type": "<e-commerce|task-tracker|chat-app|saas-dashboard|blog|other>"
+}
+\`\`\`
+
+Project keywords: build, create, make, develop, design, implement, e-commerce, store, tracker, dashboard, app, platform, system, site, website, blog, CMS, API, backend, frontend, full-stack, MVP, prototype, SaaS
+
+🔥 HECTIC SWARM PROTOCOL:
+- **PARALLEL FIRE PHASE**: 3 agents (Research/Design/Implementation) work simultaneously
+- **ITERATION VOLLEY**: 2–3 rapid rounds, fuse inputs, iterate ruthlessly
+- **REASONING FIRESTORM**: 
+  Step 0: Extract scope (6 must-haves: project, goal, stack, features, comps, timeline)
+  Step 1: Generate 12 modular tasks (3 agents × 4 subtasks)
+  Step 2: Assign MCP tools (browser, code-gen, prisma-gen, stripe-tool, etc.)
+  Step 3: Execute swarm → Deploy MVP
+
+📦 THE STACK THAT SHIPS (2025):
+- Frontend: Next.js 14+ App Router + TS + Tailwind + Shadcn/ui + TanStack Query + Zustand + RHF+Zod + Clerk + Sentry + Vercel
+- Backend: FastAPI/Node + Prisma/SQLAlchemy + PostgreSQL + Redis + BullMQ + JWT + Stripe + Railway + GitHub Actions
+- Rules: One meta-framework (Next.js); Tailwind first; Copy-paste Shadcn; Mobile-first; 80% test coverage
 
 HECTIC CONSTRAINTS:
 - Stack: React 18+ / Next.js / Tailwind / TypeScript
@@ -160,7 +186,66 @@ What to do next (if applicable)
     // Call the orchestrator (Key #1)
     const result = await callGrok(messages, orchestratorKey);
 
-    const assistantResponse = result.choices[0]?.message?.content || "No response generated";
+    let assistantResponse = result.choices[0]?.message?.content || "No response generated";
+    
+    // Check if AI detected a project scope and wants to create a swarm
+    if (assistantResponse.includes('SWARM_CREATE_REQUEST') && assistantResponse.includes('"action": "create_swarm"')) {
+      try {
+        // Extract the JSON request
+        const jsonMatch = assistantResponse.match(/```json\s*([\s\S]*?)```/);
+        if (jsonMatch && jsonMatch[1]) {
+          const swarmRequest = JSON.parse(jsonMatch[1]);
+          
+          // Call the orchestrator backend
+          const orchestratorResponse = await fetch(`${ORCHESTRATOR_URL}/orchestrator/process`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: swarmRequest.user_message || message,
+              user_id: cacheKey
+            })
+          });
+          
+          if (orchestratorResponse.ok) {
+            const swarmData = await orchestratorResponse.json();
+            
+            if (swarmData.status === 'success' && swarmData.swarm_id) {
+              // Replace the JSON block with success message
+              assistantResponse = assistantResponse.replace(
+                /\*\*SWARM_CREATE_REQUEST\*\*[\s\S]*?```json[\s\S]*?```/,
+                `✅ **AI SWARM CREATED!**
+
+**Project**: ${swarmData.swarm_id.substring(0, 8)}...
+**Status**: ${swarmData.message}
+
+🔗 **View Progress**: [Open Planner](/planner/${swarmData.swarm_id})
+
+📋 **What's Happening**:
+- 🔬 Research Agent: Analyzing requirements & competitors
+- 🎨 Design Agent: Creating architecture & wireframes  
+- 💻 Implementation Agent: Planning resources & timeline
+
+**Total Tasks**: 3 main phases × 4 subtasks = 12 execution units
+
+The swarm is breaking down your project using Grok-4-Fast-Reasoning. Click the link above to watch real-time progress!`
+              );
+            } else if (swarmData.status === 'needs_clarification') {
+              assistantResponse = assistantResponse.replace(
+                /\*\*SWARM_CREATE_REQUEST\*\*[\s\S]*?```json[\s\S]*?```/,
+                `🤔 **Need More Details**
+
+${swarmData.message}
+
+Once you provide this info, I'll create the AI swarm!`
+              );
+            }
+          }
+        }
+      } catch (swarmError) {
+        console.error('Swarm creation error:', swarmError);
+        // Keep original response if swarm creation fails
+      }
+    }
 
     // Update cached conversation
     conversationHistory.push(
