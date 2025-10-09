@@ -331,6 +331,89 @@ Return ONLY valid JSON, no markdown code blocks."""
         timeline = scope.get('timeline', '1-2h')
         
         prompts = {
+            # NEW: Specialized 3-agent prompts with diverse skillsets
+            'frontend_architect': f"""You are Frontend Architect with diverse skillsets: Design + Implementation (UI/UX).
+
+Project: "{project}"
+Goal: {goal}
+Stack: {tech_stack.get('frontend', 'Next.js 14+ + TS + Tailwind + Shadcn')}
+Features: {', '.join(features[:3]) if features else 'TBD'}
+
+Generate exactly 4 frontend subtasks as a JSON array. Combine design AND implementation:
+1. Design wireframes for main UI (product catalog/cart/dashboard) - Shadcn component specs
+2. Implement Next.js pages with App Router (/products, /cart, /profile)
+3. Integrate TanStack Query for API calls + Zustand for cart state
+4. Add React Hook Form + Zod validation + Clerk auth integration
+
+**Output Format** (ONLY JSON array, no markdown):
+[
+  {{
+    "id": "1.1",
+    "title": "Design + Implement Product Catalog UI",
+    "description": "Create Shadcn wireframe specs, then code /app/products/page.tsx with filters/search",
+    "priority": "high",
+    "tools": ["shadcn-gen", "code-gen", "browser"]
+  }},
+  ... (3 more)
+]
+
+Use MCP tools: shadcn-gen, code-gen, api-designer, browser, diagramming-tool.""",
+
+            'backend_integrator': f"""You are Backend Integrator with diverse skillsets: Implementation + Integration (APIs/DB/Payments).
+
+Project: "{project}"
+Goal: {goal}
+Stack: {tech_stack.get('backend', 'FastAPI/Node + Prisma + PostgreSQL + Redis')}
+Features: {', '.join(features[:3]) if features else 'TBD'}
+
+Generate exactly 4 backend subtasks as a JSON array. Combine implementation AND integration:
+1. Design Prisma schema (models: Product, User, Order, Cart) + migrations
+2. Implement Express/FastAPI routes (/api/products, /api/cart, /api/orders) with Zod validation
+3. Integrate Stripe checkout sessions + webhook handlers (/api/stripe/webhook)
+4. Setup Redis for cart caching + BullMQ for async email queue (order confirmations)
+
+**Output Format** (ONLY JSON array, no markdown):
+[
+  {{
+    "id": "2.1",
+    "title": "Design Prisma Schema + Implement APIs",
+    "description": "Create schema.prisma with relations, then code Express routes with validation",
+    "priority": "high",
+    "tools": ["prisma-gen", "code-gen", "db-sync", "api-designer"]
+  }},
+  ... (3 more)
+]
+
+Use MCP tools: prisma-gen, code-gen, stripe-tool, db-sync, docker-build.""",
+
+            'deployment_guardian': f"""You are Deployment Guardian with diverse skillsets: Testing + Deployment (CI/CD).
+
+Project: "{project}"
+Goal: {goal}
+Timeline: {timeline}
+Target: localhost:3000 → Vercel (frontend) + Railway (backend)
+
+Generate exactly 4 deployment subtasks as a JSON array. Combine testing AND deployment:
+1. Write Vitest unit tests (cart logic, API mocks) + Playwright E2E (checkout flow) - 80% coverage
+2. Create GitHub Actions CI/CD (.github/workflows/ci.yml: test → build → deploy)
+3. Setup Vercel deploy (frontend) + Railway (backend PG/Redis) + Docker Compose (local)
+4. Configure Sentry error tracking + Lighthouse CI (90+ scores) + monitoring
+
+**Output Format** (ONLY JSON array, no markdown):
+[
+  {{
+    "id": "3.1",
+    "title": "Write Tests (Unit + E2E) for Coverage 80%+",
+    "description": "Create Vitest tests for components/logic, Playwright for checkout flow",
+    "priority": "medium",
+    "tools": ["code-gen", "test-runner", "browser"]
+  }},
+  ... (3 more)
+]
+
+Use MCP tools: code-gen, docker-build, vercel-cli, test-runner, monitoring-setup.""",
+
+            # LEGACY: Old role prompts for backwards compatibility
             'research': f"""You are a Research Specialist agent in a swarm for project "{project}".
 
 Goal: {goal}
