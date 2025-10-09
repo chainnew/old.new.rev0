@@ -15,11 +15,11 @@ tenacity==8.5.0
 requests==2.31.0  # For MCP tool HTTP calls
 
 # Database & RAG
-psycopg[binary]==3.2.1  # PostgreSQL driver for Python 3.13
+psycopg[binary]>=3.2.2  # PostgreSQL driver for Python 3.13 (use latest)
 pgvector==0.3.0         # Vector similarity search
 langchain==0.1.16       # RAG orchestration
 langchain-openai==0.1.1 # OpenAI embeddings
-tiktoken==0.6.0         # Token counting
+tiktoken>=0.7.0         # Token counting (use latest for Python 3.13 wheels)
 
 # Swarm Coordination (optional - uncomment if using swarms library)
 # swarms==5.0.0

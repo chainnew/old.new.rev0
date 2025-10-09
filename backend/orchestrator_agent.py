@@ -1,6 +1,8 @@
 """
 Orchestrator Agent: Main user-facing entry point for scope → swarm → planner pipeline.
 Interacts with user, clarifies scope, starts swarms, and populates the agent planner.
+
+NOW WITH: Retry logic, self-validation, dynamic planning, escalations, context memory
 """
 import json
 import os
@@ -8,6 +10,13 @@ import requests
 from typing import Dict, Any, List
 from openai import OpenAI
 from hive_mind_db import HiveMindDB
+from agents.conflict_resolver import get_conflict_resolver
+from agents.task_scheduler import create_scheduler
+from agents.retry_manager import get_retry_manager
+from agents.code_validator import get_code_validator
+from agents.dynamic_planner import get_dynamic_planner
+from agents.escalation_manager import get_escalation_manager
+from agents.context_memory import get_context_memory
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,31 +25,48 @@ class OrchestratorAgent:
     def __init__(self):
         self.db = HiveMindDB('swarms/active_swarm.db')
         self.db.init_db()
-        
+
+        # Core systems (conflict resolution + scheduling)
+        self.conflict_resolver = get_conflict_resolver()
+        self.scheduler = create_scheduler(self.db)
+
+        # NEW: Intelligence amplification systems
+        self.retry_manager = get_retry_manager()
+        self.code_validator = get_code_validator()
+        self.dynamic_planner = get_dynamic_planner()
+        self.escalation_manager = get_escalation_manager(self.db)
+        self.context_memory = get_context_memory(self.db)
+
         # OpenRouter client for Grok-4-Fast (try numbered keys as fallback)
         api_key = (
-            os.getenv('OPENROUTER_API_KEY') or 
-            os.getenv('OPENROUTER_API_KEY1') or 
-            os.getenv('OPENROUTER_API_KEY2') or 
+            os.getenv('OPENROUTER_API_KEY') or
+            os.getenv('OPENROUTER_API_KEY1') or
+            os.getenv('OPENROUTER_API_KEY2') or
             os.getenv('OPENROUTER_API_KEY3')
         )
-        
+
         if not api_key:
             raise ValueError("OPENROUTER_API_KEY not found in environment. Please set it in .env file.")
-        
+
         self.client = OpenAI(
             api_key=api_key,
             base_url="https://openrouter.ai/api/v1"
         )
         self.model = os.getenv('OPENROUTER_MODEL', 'x-ai/grok-4-fast')
-        
+
         # MCP integration
         self.mcp_url = os.getenv('MCP_URL', 'http://localhost:8001')
         self.mcp_api_key = os.getenv('MCP_API_KEY', 'mcp-secret-key')
         self.mcp_tools = self._load_mcp_tools()
-        
-        print(f"🎯 Orchestrator initialized with {self.model}")
+
+        print(f"\n🚀 Orchestrator initialized with {self.model}")
         print(f"🔧 MCP Tools loaded: {len(self.mcp_tools)} tools available")
+        print(f"🛡️ Conflict resolver and scheduler active")
+        print(f"🔄 Retry manager loaded (intelligent error recovery)")
+        print(f"✅ Code validator loaded (syntax + type checking)")
+        print(f"📊 Dynamic planner loaded (6-100+ tasks based on complexity)")
+        print(f"🚨 Escalation manager loaded (smart blocker handling)")
+        print(f"🧠 Context memory loaded (remember decisions & learnings)\n")
     
     def _load_mcp_tools(self) -> List[Dict[str, Any]]:
         """Load MCP tool schemas from MCP server."""
@@ -72,22 +98,37 @@ class OrchestratorAgent:
         
         # Extract or generate scope
         scope = self._extract_scope(message)
-        
-        # Step 2: Start swarm with 3 agents (optimal for reasoning)
-        swarm_id = self.db.start_swarm_from_scope(scope, num_agents=3)
+
+        # NEW: Analyze complexity and generate adaptive plan
+        plan = self.dynamic_planner.generate_adaptive_plan(scope)
+
+        # Remember initial scope decision
+        self.context_memory.remember_decision(
+            swarm_id="pending",
+            decision=f"Project complexity: {plan['complexity']}",
+            reasoning=f"Score: {plan['complexity_score']}, using {plan['num_agents']} agents with {plan['total_tasks']} tasks"
+        )
+
+        # Step 2: Start swarm with DYNAMIC agent count (not hardcoded 3)
+        swarm_id = self.db.start_swarm_from_scope(scope, num_agents=plan['num_agents'])
         print(f"🚀 Swarm {swarm_id} started for '{scope['project']}'")
-        
+        print(f"   Strategy: {plan['strategy']} with {plan['num_agents']} agents, {plan['total_tasks']} tasks")
+
+        # Load any existing memory for this swarm
+        self.context_memory.load_memory_from_db(swarm_id)
+
         # Step 3: Generate detailed tasks/subtasks using Grok agents
-        self._populate_planner_tasks(swarm_id, scope)
-        
+        self._populate_planner_tasks(swarm_id, scope, plan)
+
         # Step 4: Update swarm to running
         self.db.update_swarm_status(swarm_id, 'running')
-        
+
         return {
             "status": "success",
             "message": f"Scope populated! Swarm started for {scope['project']}",
             "swarm_id": swarm_id,
-            "planner_url": f"/planner/{swarm_id}"
+            "planner_url": f"/planner/{swarm_id}",
+            "plan": plan  # Include plan details
         }
     
     def _is_vague(self, message: str) -> bool:
@@ -204,10 +245,12 @@ Return ONLY valid JSON, no markdown code blocks."""
                 }
             }
     
-    def _populate_planner_tasks(self, swarm_id: str, scope: Dict[str, Any]) -> None:
+    def _populate_planner_tasks(self, swarm_id: str, scope: Dict[str, Any], plan: Dict[str, Any] = None) -> None:
         """
-        Generate hierarchical tasks/subtasks for the planner using 3 Grok agents.
+        Generate hierarchical tasks/subtasks for the planner using dynamic number of Grok agents.
         Maps to agent-planner.tsx structure.
+
+        Now uses plan from dynamic_planner for optimal task count.
         """
         # Get agents from DB
         status = self.db.get_swarm_status(swarm_id)
@@ -532,12 +575,12 @@ Use MCP tools: orchestrator-assign, timeline-generator, risk-analyzer, code-gen,
         Returns array of Task objects matching the component's interface.
         """
         status = self.db.get_swarm_status(swarm_id)
-        
+
         tasks = []
         for idx, agent in enumerate(status['agents'], 1):
             agent_state = agent['state']
             task_data = agent_state.get('data', {})
-            
+
             task = {
                 'id': str(idx),
                 'title': task_data.get('task_title', f"{agent['role'].capitalize()} Phase"),
@@ -548,10 +591,56 @@ Use MCP tools: orchestrator-assign, timeline-generator, risk-analyzer, code-gen,
                 'dependencies': ['1', '2'] if idx == 3 else [],
                 'subtasks': task_data.get('subtasks', [])
             }
-            
+
             tasks.append(task)
-        
+
         return tasks
+
+    def get_swarm_progress(self, swarm_id: str) -> Dict[str, Any]:
+        """Get progress and statistics for a swarm"""
+        stats = self.scheduler.get_stats(swarm_id)
+        conflict_stats = self.conflict_resolver.get_stats()
+
+        return {
+            **stats,
+            'conflict_stats': conflict_stats
+        }
+
+    def check_task_ready(self, agent_id: str, task_id: str, swarm_id: str) -> tuple[bool, str]:
+        """
+        Check if agent can start a task (used by agents before execution).
+        Returns (can_start, message)
+        """
+        # Check scheduling (dependencies)
+        can_start, reason = self.scheduler.can_agent_start_task(agent_id, task_id, swarm_id)
+
+        if not can_start:
+            return False, f"Task blocked: {reason}"
+
+        # Check for failed dependencies
+        full_task = self.scheduler._get_full_task(task_id, swarm_id)
+        block_reason = self.conflict_resolver.should_block_dependent_task(
+            full_task.get('dependencies', [])
+        )
+
+        if block_reason:
+            return False, block_reason
+
+        return True, "Task ready to start"
+
+    def acquire_file_lock(self, filepath: str, agent_id: str) -> bool:
+        """Try to acquire lock on a file for an agent"""
+        return self.conflict_resolver.acquire_file_lock(filepath, agent_id)
+
+    def release_file_lock(self, filepath: str, agent_id: str):
+        """Release file lock after agent completes write"""
+        self.conflict_resolver.release_file_lock(filepath, agent_id)
+
+    def report_task_failure(self, task_id: str, error: str, agent_id: str):
+        """Report task failure for propagation to dependent tasks"""
+        self.conflict_resolver.mark_task_failed(task_id, error)
+        self.conflict_resolver.release_all_locks_for_agent(agent_id)
+        print(f"❌ Task {task_id} failed, locks released for agent {agent_id}")
 
 # CLI for testing
 if __name__ == "__main__":

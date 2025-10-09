@@ -251,6 +251,69 @@ def get_planner_tasks(swarm_id: str):
             "error": str(e)
         }
 
+@app.get("/api/planner/{swarm_id}/progress")
+def get_swarm_progress(swarm_id: str):
+    """
+    Get swarm progress, scheduling stats, and conflict resolution stats.
+    Includes: % complete, ready tasks, active locks, failed tasks, escalations, memory.
+    """
+    try:
+        progress = orchestrator.get_swarm_progress(swarm_id)
+
+        # Add escalation summary
+        escalations = orchestrator.escalation_manager.get_escalation_summary(swarm_id)
+        progress['escalations'] = escalations
+
+        # Add context memory summary
+        memory_summary = orchestrator.context_memory.get_memory_summary(swarm_id)
+        progress['memory'] = memory_summary
+
+        return {
+            "swarm_id": swarm_id,
+            **progress
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            "swarm_id": swarm_id,
+            "progress": 0,
+            "error": str(e)
+        }
+
+@app.get("/api/planner/{swarm_id}/escalations")
+def get_swarm_escalations(swarm_id: str):
+    """
+    Get all escalations for a swarm (blockers needing user attention)
+    """
+    try:
+        escalations = orchestrator.escalation_manager.get_escalations_for_swarm(swarm_id)
+        return {
+            "swarm_id": swarm_id,
+            "escalations": escalations,
+            "count": len(escalations)
+        }
+    except Exception as e:
+        return {
+            "swarm_id": swarm_id,
+            "escalations": [],
+            "error": str(e)
+        }
+
+@app.post("/api/planner/{swarm_id}/escalations/{escalation_id}/resolve")
+def resolve_escalation(swarm_id: str, escalation_id: str, resolution: Dict[str, Any]):
+    """
+    Resolve an escalation (user provided answer/decision)
+    """
+    try:
+        result = orchestrator.escalation_manager.resolve_escalation(escalation_id, resolution)
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 # ============================================================================
 # MCP Tool Proxy Endpoints (Frontend → MCP Server)
 # ============================================================================
