@@ -33,6 +33,7 @@ import {
     Smartphone,
     Palette,
     Hash,
+    FilePlus,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react"
@@ -52,6 +53,7 @@ import { AuthModal } from "./auth-modal";
 import { GitHubPanel } from "./github-panel";
 import { ChatSidebar } from "./chat-sidebar";
 import { AdminPanel } from "../admin/admin-panel";
+import { CodeActionPanel } from "./code-action-panel";
 
 interface UseAutoResizeTextareaProps {
     minHeight: number;
@@ -182,14 +184,14 @@ export function AnimatedAIChat() {
     const [recentCommand, setRecentCommand] = useState<string | null>(null);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-        minHeight: 60,
-        maxHeight: 200,
+        minHeight: 100,
+        maxHeight: 300,
     });
     const [inputFocused, setInputFocused] = useState(false);
     const commandPaletteRef = useRef<HTMLDivElement>(null);
-    const [conversationId] = useState(() => `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-    const [showPlanner, setShowPlanner] = useState(false);
+    const [conversationId, setConversationId] = useState(() => `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
     const [isMounted, setIsMounted] = useState(false);
+    const [plannerNotification, setPlannerNotification] = useState(false);
     const [showCode, setShowCode] = useState(false);
     const [showBottomPanel, setShowBottomPanel] = useState(false);
     const [showPlanningPanel, setShowPlanningPanel] = useState(false);
@@ -211,12 +213,37 @@ export function AnimatedAIChat() {
     const [showGitHub, setShowGitHub] = useState(false);
     const [showChatSidebar, setShowChatSidebar] = useState(false);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Mount effect - runs once
     useEffect(() => {
         setIsMounted(true);
         const savedTheme = loadTheme();
         setCurrentTheme(savedTheme);
     }, []);
+
+    // Load conversation history when conversationId changes
+    useEffect(() => {
+        if (!conversationId) return;
+        
+        const loadConversation = async () => {
+            try {
+                const response = await fetch(`/api/conversations/${conversationId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setMessages(data.messages || []);
+                }
+            } catch (error) {
+                console.error("Failed to load conversation history:", error);
+            }
+        };
+        loadConversation();
+    }, [conversationId]);
+
+    // Auto-scroll to latest message
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
 
     const handleThemeChange = (themeId: string) => {
         setCurrentTheme(themeId);
@@ -419,19 +446,21 @@ export function AnimatedAIChat() {
         setValue("");
         adjustHeight(true);
 
-        // Check if this is a big/complex task that needs the planner
+        // Check if this is a big/complex task - trigger notification instead of auto-opening
         const complexityKeywords = [
             'build', 'create app', 'implement', 'develop', 'architecture',
             'system', 'project', 'multiple', 'integrate', 'full stack',
-            'backend', 'frontend', 'database', 'api', '/plan'
+            'backend', 'frontend', 'database', 'api', '/plan', 'scope'
         ];
         
         const isComplexTask = complexityKeywords.some(keyword => 
             userMessage.toLowerCase().includes(keyword)
         ) || userMessage.length > 200; // Long messages = complex tasks
         
-        if (isComplexTask && !showPlanner) {
-            setShowPlanner(true);
+        if (isComplexTask) {
+            setPlannerNotification(true);
+            // Auto-clear notification after 10 seconds
+            setTimeout(() => setPlannerNotification(false), 10000);
         }
 
         // Add user message
@@ -532,9 +561,40 @@ export function AnimatedAIChat() {
                 )}
             </AnimatePresence>
 
-            {/* Left/Bottom: Chat Area - Positioned at bottom-left */}
+            {/* Top Toolbar - Fixed above chat */}
+            <motion.div
+                className="fixed top-4 z-50"
+                style={{ left: 'calc(3% + 1rem)' }}
+                animate={{
+                    x: isChatCollapsed ? -800 : 0,
+                    opacity: isChatCollapsed ? 0 : 1
+                }}
+                transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30
+                }}
+            >
+                <div className="flex items-center gap-2">
+                    <motion.button
+                        onClick={() => {
+                            setMessages([]);
+                            setConversationId(`conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+                        }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600/90 hover:bg-violet-500 backdrop-blur-sm border border-violet-400/30 text-white text-sm font-medium transition-colors shadow-lg"
+                        title="Start a new chat session"
+                    >
+                        <FilePlus className="w-4 h-4" />
+                        New Session
+                    </motion.button>
+                </div>
+            </motion.div>
+
+            {/* Left: Chat Area - Full height, scrollable past top bar */}
             <motion.div 
-                className="fixed bottom-4 z-10 w-[900px] max-h-[450px] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+                className="fixed top-0 bottom-4 z-10 w-[900px] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
                 style={{ left: '3%' }}
                 animate={{
                     x: isChatCollapsed ? -800 : 0,
@@ -547,16 +607,26 @@ export function AnimatedAIChat() {
                 }}
             >
 
-                {/* Chat Messages Area - Scrollable with fixed height */}
-                <div className="flex-1 w-full overflow-y-auto overflow-x-hidden pb-2 pt-2 min-h-0">
+                {/* Chat Messages Area - Scrollable with sleek scrollbar */}
+                <div 
+                    className="flex-1 w-full overflow-y-auto overflow-x-hidden pb-2 pt-24 min-h-0 custom-scrollbar"
+                    style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(139, 92, 246, 0.3) transparent'
+                    }}
+                >
                     <div className="space-y-4 flex flex-col w-full px-4 min-h-full justify-end">
                         {messages.length === 0 ? (
                             <div className="flex-1" />
                         ) : (
                             <div className="space-y-4">
                                 {messages.map((msg, idx) => (
-                                    <MessageBubble key={`${idx}-${msg.role}`} message={msg} />
+                                    <MessageBubble 
+                                        key={`msg-${idx}-${msg.role}-${msg.content.substring(0, 50)}`} 
+                                        message={msg} 
+                                    />
                                 ))}
+                                <div ref={messagesEndRef} />
                             </div>
                         )}
                     </div>
@@ -631,7 +701,7 @@ export function AnimatedAIChat() {
                                 "text-white/90 text-sm",
                                 "focus:outline-none",
                                 "placeholder:text-white/20",
-                                "min-h-[60px]"
+                                "min-h-[100px]"
                             )}
                             style={{
                                 overflow: "hidden",
@@ -735,11 +805,14 @@ export function AnimatedAIChat() {
 
                             <motion.button
                                 type="button"
-                                onClick={() => setShowPlanningPanel(!showPlanningPanel)}
+                                onClick={() => {
+                                    setShowPlanningPanel(!showPlanningPanel);
+                                    setPlannerNotification(false);
+                                }}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 className={cn(
-                                    "p-2 rounded-lg text-sm font-medium transition-all",
+                                    "p-2 rounded-lg text-sm font-medium transition-all relative",
                                     showPlanningPanel
                                         ? "bg-violet-500/20 text-violet-300"
                                         : "bg-white/[0.05] text-white/40 hover:bg-white/10 hover:text-white/60"
@@ -747,6 +820,19 @@ export function AnimatedAIChat() {
                                 title="Toggle AI Planner"
                             >
                                 <LayoutList className="w-4 h-4" />
+                                {/* Notification pulse when scope detected */}
+                                <AnimatePresence>
+                                    {plannerNotification && !showPlanningPanel && (
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            exit={{ scale: 0 }}
+                                            className="absolute -top-1 -right-1 w-3 h-3 bg-violet-500 rounded-full"
+                                        >
+                                            <div className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-75" />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </motion.button>
 
                             <motion.button
@@ -869,26 +955,7 @@ export function AnimatedAIChat() {
             </div>
             </motion.div>
 
-            {/* Right: Agent Planner - Only shows for complex tasks */}
-            {isMounted && (
-                <AnimatePresence>
-                    {showPlanner && (
-                        <motion.div 
-                            className="w-96 h-full mr-6 flex-shrink-0 relative z-10 py-6"
-                            initial={{ opacity: 0, x: 50, width: 0 }}
-                            animate={{ opacity: 1, x: 0, width: 384 }}
-                            exit={{ opacity: 0, x: 50, width: 0 }}
-                            transition={{ 
-                                type: "spring",
-                                stiffness: 300,
-                                damping: 30
-                            }}
-                        >
-                            <Plan />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            )}
+            {/* Removed auto-showing planner sidebar - use button in chat bar instead */}
 
             {/* AI Planning Panel - Toggleable, content-wrapped, anchored to top */}
             {isMounted && (
@@ -1161,7 +1228,7 @@ export function AnimatedAIChat() {
     );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+const MessageBubble = React.memo(({ message }: { message: ChatMessage }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -1170,20 +1237,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    // DEBUG: Log renders
-    React.useEffect(() => {
-        console.log('[MessageBubble] Rendered:', {
-            role: message.role,
-            contentLength: message.content.length,
-            timestamp: Date.now()
-        });
-    });
-
     return (
         <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            initial={false}
+            animate={{ opacity: 1 }}
             className={cn(
                 "rounded-2xl backdrop-blur-xl relative group will-change-transform",
                 message.role === "user"
@@ -1196,7 +1253,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                     {message.content}
                 </p>
             ) : (
-                <MarkdownRenderer content={message.content} />
+                <>
+                    <MarkdownRenderer content={message.content} />
+                    <CodeActionPanel message={message.content} />
+                </>
             )}
             
             {/* Copy button */}
@@ -1215,7 +1275,9 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             </motion.button>
         </motion.div>
     );
-}
+});
+
+MessageBubble.displayName = 'MessageBubble';
 
 function TypingDots() {
     return (

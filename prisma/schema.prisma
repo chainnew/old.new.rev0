@@ -1,0 +1,129 @@
+// Prisma schema for 2M context chat with PostgreSQL
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [uuidOssp(map: "uuid-ossp", schema: "public")]
+}
+
+model User {
+  id            String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email         String          @unique @db.VarChar(255)
+  username      String          @unique @db.VarChar(100)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  metadata      Json            @default("{}") @db.JsonB
+  conversations Conversation[]
+  searchQueries SearchQuery[]
+  feedback      Feedback[]
+
+  @@map("users")
+}
+
+model Conversation {
+  id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId            String?   @map("user_id") @db.Uuid
+  title             String?   @db.VarChar(500)
+  status            String    @default("active") @db.VarChar(50) // active, archived, deleted
+  contextWindowSize Int       @default(2000000) @map("context_window_size") // 2M tokens
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  metadata          Json      @default("{}") @db.JsonB
+  user              User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages          Message[]
+  tasks             Task[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  conversationId String       @map("conversation_id") @db.Uuid
+  role           String       @db.VarChar(20) // user, assistant, system
+  content        String       @db.Text
+  tokensUsed     Int?         @map("tokens_used")
+  model          String       @default("x-ai/grok-code-fast-1") @db.VarChar(100)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  metadata       Json         @default("{}") @db.JsonB
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  feedback       Feedback[]
+
+  @@index([conversationId])
+  @@index([role])
+  @@index([createdAt(sort: Desc)])
+  @@map("messages")
+}
+
+model Task {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  conversationId String       @map("conversation_id") @db.Uuid
+  parentTaskId   String?      @map("parent_task_id") @db.Uuid
+  title          String       @db.VarChar(500)
+  description    String?      @db.Text
+  status         String       @default("pending") @db.VarChar(50)
+  priority       String       @default("medium") @db.VarChar(20)
+  level          Int          @default(0)
+  orderIndex     Int          @default(0) @map("order_index")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  completedAt    DateTime?    @map("completed_at") @db.Timestamptz(6)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  subtasks       Subtask[]
+
+  @@index([conversationId])
+  @@index([status])
+  @@index([parentTaskId])
+  @@map("tasks")
+}
+
+model Subtask {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  taskId      String    @map("task_id") @db.Uuid
+  title       String    @db.VarChar(500)
+  description String?   @db.Text
+  status      String    @default("pending") @db.VarChar(50)
+  priority    String    @default("medium") @db.VarChar(20)
+  mcpTools    String[]  @map("mcp_tools") @db.VarChar(100)
+  orderIndex  Int       @default(0) @map("order_index")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("subtasks")
+}
+
+model SearchQuery {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  conversationId String?   @map("conversation_id") @db.Uuid
+  queryText      String    @map("query_text") @db.Text
+  resultsReturned Int?     @map("results_returned")
+  searchType     String?   @map("search_type") @db.VarChar(50)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("search_queries")
+}
+
+model Feedback {
+  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  messageId    String   @map("message_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  rating       Int      @db.Integer
+  feedbackText String?  @map("feedback_text") @db.Text
+  category     String?  @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  message      Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("feedback")
+}

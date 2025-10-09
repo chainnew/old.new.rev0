@@ -100,10 +100,22 @@ export default function GlobalPlannerPanel({ isOpen, onClose }: GlobalPlannerPan
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 400 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className={`fixed ${isExpanded ? 'inset-4' : 'right-4 top-4 bottom-4'} ${isMinimized ? 'h-auto bottom-auto' : ''} z-50`}
-          style={{ width: isExpanded ? 'auto' : '420px' }}
+          className={`fixed right-6 z-[70] ${isMinimized ? 'top-20' : 'top-20'}`}
+          style={{ 
+            width: isExpanded ? '800px' : '420px',
+            maxHeight: isExpanded ? 'calc(100vh - 8rem)' : 'auto'
+          }}
         >
-          <div className="h-full flex flex-col bg-gradient-to-br from-black via-violet-950/20 to-black border border-violet-500/30 rounded-xl shadow-2xl shadow-violet-500/20 backdrop-blur-xl overflow-hidden">
+          <div className="flex flex-col bg-gradient-to-br from-black via-violet-950/20 to-black border border-violet-500/30 rounded-xl shadow-2xl shadow-violet-500/20 backdrop-blur-xl overflow-hidden relative">
+            {/* Floating Close Button - Always Visible */}
+            <button
+              onClick={onClose}
+              className="absolute top-2 right-2 z-[60] p-2 bg-black/80 hover:bg-red-500/20 border border-white/10 hover:border-red-500/40 rounded-lg transition-all shadow-lg group"
+              title="Close Panel"
+            >
+              <X className="w-4 h-4 text-white/60 group-hover:text-red-400" />
+            </button>
+
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-violet-500/30 bg-black/40">
               <div className="flex items-center gap-2">
@@ -157,7 +169,7 @@ export default function GlobalPlannerPanel({ isOpen, onClose }: GlobalPlannerPan
 
             {/* Content */}
             {!isMinimized && (
-              <div className="flex-1 overflow-hidden flex flex-col">
+              <div className="flex flex-col">
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-2 p-3 border-b border-white/5">
                   <div className="bg-white/5 rounded-lg p-2">
@@ -192,19 +204,20 @@ export default function GlobalPlannerPanel({ isOpen, onClose }: GlobalPlannerPan
                 </div>
 
                 {/* Swarms List */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                <div className="overflow-y-auto p-3 space-y-2 max-h-[500px]">
                   {loading && swarms.length === 0 ? (
-                    <div className="flex items-center justify-center h-32">
+                    <div className="flex items-center justify-center py-6">
                       <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-400 mx-auto mb-2"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-violet-400 mx-auto mb-2"></div>
                         <p className="text-xs text-white/40">Loading swarms...</p>
                       </div>
                     </div>
                   ) : swarms.length === 0 ? (
-                    <div className="flex items-center justify-center h-32">
+                    <div className="flex items-center justify-center py-6">
                       <div className="text-center">
-                        <Folder className="w-12 h-12 text-white/20 mx-auto mb-2" />
+                        <Folder className="w-8 h-8 text-white/20 mx-auto mb-2" />
                         <p className="text-xs text-white/40">No active swarms</p>
+                        <p className="text-[10px] text-white/20 mt-1">Create a project scope to get started</p>
                       </div>
                     </div>
                   ) : (

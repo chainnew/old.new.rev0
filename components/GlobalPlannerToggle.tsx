@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Zap } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import GlobalPlannerPanel from './GlobalPlannerPanel';
 
 export default function GlobalPlannerToggle() {
@@ -24,7 +24,7 @@ export default function GlobalPlannerToggle() {
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full blur-lg opacity-75 group-hover:opacity-100 transition-opacity"></div>
           <div className="relative bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400 text-white p-4 rounded-full shadow-2xl transition-all transform hover:scale-110">
-            <Zap className="w-6 h-6" />
+            <Clock className="w-6 h-6" />
           </div>
           
           {/* Pulse animation */}
