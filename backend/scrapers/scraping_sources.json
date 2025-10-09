@@ -1,0 +1,257 @@
+{
+  "version": "1.0",
+  "last_updated": "2025-10-10",
+  "description": "Curated list of UI component repositories for scraping production-quality patterns",
+
+  "sources": [
+    {
+      "repo": "shadcn-ui/ui",
+      "priority": "critical",
+      "category": "component_library",
+      "stars": 96240,
+      "description": "Modern accessible components",
+      "frameworks": ["react"],
+      "expected_components": 50
+    },
+    {
+      "repo": "saadeghi/daisyui",
+      "priority": "critical",
+      "category": "component_library",
+      "stars": 38885,
+      "description": "Tailwind CSS component library",
+      "frameworks": ["tailwind"],
+      "expected_components": 40
+    },
+    {
+      "repo": "tremorlabs/tremor",
+      "priority": "high",
+      "category": "dashboards",
+      "stars": 16448,
+      "description": "React dashboard components",
+      "frameworks": ["react"],
+      "expected_components": 50
+    },
+    {
+      "repo": "magicuidesign/magicui",
+      "priority": "high",
+      "category": "animated_components",
+      "stars": 19126,
+      "description": "Animated components for design engineers",
+      "frameworks": ["react"],
+      "expected_components": 30
+    },
+    {
+      "repo": "aceternity/aceternity-ui",
+      "priority": "high",
+      "category": "animated_components",
+      "stars": 5000,
+      "description": "Beautiful animated components",
+      "frameworks": ["react"],
+      "expected_components": 40
+    },
+    {
+      "repo": "kokonut-labs/kokonutui",
+      "priority": "medium",
+      "category": "component_library",
+      "stars": 1345,
+      "description": "Next.js + Tailwind components",
+      "frameworks": ["react"],
+      "expected_components": 25
+    },
+    {
+      "repo": "unovue/shadcn-vue",
+      "priority": "high",
+      "category": "component_library",
+      "stars": 8316,
+      "description": "Vue port of shadcn/ui",
+      "frameworks": ["vue"],
+      "expected_components": 40
+    },
+    {
+      "repo": "huntabyte/shadcn-svelte",
+      "priority": "medium",
+      "category": "component_library",
+      "stars": 7505,
+      "description": "Svelte port of shadcn/ui",
+      "frameworks": ["svelte"],
+      "expected_components": 35
+    },
+    {
+      "repo": "radix-ui/primitives",
+      "priority": "critical",
+      "category": "primitives",
+      "stars": 17964,
+      "description": "Accessible component primitives",
+      "frameworks": ["react"],
+      "expected_components": 30
+    },
+    {
+      "repo": "tailwindlabs/headlessui",
+      "priority": "critical",
+      "category": "headless_components",
+      "stars": 28011,
+      "description": "Unstyled accessible components",
+      "frameworks": ["react", "vue"],
+      "expected_components": 15
+    },
+    {
+      "repo": "onlook-dev/onlook",
+      "priority": "medium",
+      "category": "design_tools",
+      "stars": 22794,
+      "description": "AI-first design tool for React",
+      "frameworks": ["react"],
+      "expected_components": 20
+    },
+    {
+      "repo": "xyflow/xyflow",
+      "priority": "medium",
+      "category": "diagrams",
+      "stars": 31834,
+      "description": "Flow diagram library",
+      "frameworks": ["react", "svelte"],
+      "expected_components": 15
+    },
+    {
+      "repo": "wandb/openui",
+      "priority": "low",
+      "category": "ai_generated",
+      "stars": 21731,
+      "description": "AI-generated UI components",
+      "frameworks": ["react"],
+      "expected_components": 10
+    },
+    {
+      "repo": "assistant-ui/assistant-ui",
+      "priority": "medium",
+      "category": "ai_chat",
+      "stars": 6617,
+      "description": "AI chat interface components",
+      "frameworks": ["react"],
+      "expected_components": 12
+    },
+    {
+      "repo": "udecode/plate",
+      "priority": "medium",
+      "category": "rich_text",
+      "stars": 15220,
+      "description": "Rich text editor with shadcn/ui",
+      "frameworks": ["react"],
+      "expected_components": 25
+    },
+    {
+      "repo": "pure-admin/vue-pure-admin",
+      "priority": "medium",
+      "category": "admin_template",
+      "stars": 18973,
+      "description": "Vue3 admin template",
+      "frameworks": ["vue"],
+      "expected_components": 40
+    },
+    {
+      "repo": "tabler/tabler",
+      "priority": "high",
+      "category": "admin_template",
+      "stars": 40146,
+      "description": "Bootstrap-based admin kit",
+      "frameworks": ["bootstrap"],
+      "expected_components": 30
+    },
+    {
+      "repo": "SyntaxUI/syntaxui",
+      "priority": "medium",
+      "category": "animated_components",
+      "stars": 969,
+      "description": "Tailwind + Framer Motion components",
+      "frameworks": ["react"],
+      "expected_components": 20
+    },
+    {
+      "repo": "bcakmakoglu/vue-flow",
+      "priority": "low",
+      "category": "diagrams",
+      "stars": 5710,
+      "description": "Vue flowchart component",
+      "frameworks": ["vue"],
+      "expected_components": 10
+    },
+    {
+      "repo": "founded-labs/react-native-reusables",
+      "priority": "low",
+      "category": "mobile",
+      "stars": 7064,
+      "description": "shadcn/ui for React Native",
+      "frameworks": ["react-native"],
+      "expected_components": 30
+    },
+    {
+      "repo": "froala/design-blocks",
+      "priority": "medium",
+      "category": "landing_pages",
+      "stars": 13774,
+      "description": "Bootstrap design blocks",
+      "frameworks": ["bootstrap"],
+      "expected_components": 170
+    },
+    {
+      "repo": "h5bp/html5-boilerplate",
+      "priority": "low",
+      "category": "template",
+      "stars": 57180,
+      "description": "HTML5 template",
+      "frameworks": ["html"],
+      "expected_components": 5
+    },
+    {
+      "repo": "cobiwave/simplefolio",
+      "priority": "low",
+      "category": "portfolio",
+      "stars": 13989,
+      "description": "Portfolio template",
+      "frameworks": ["html"],
+      "expected_components": 8
+    },
+    {
+      "repo": "vantezzen/autoform",
+      "priority": "medium",
+      "category": "forms",
+      "stars": 3407,
+      "description": "Auto-generate forms from schemas",
+      "frameworks": ["react"],
+      "expected_components": 5
+    },
+    {
+      "repo": "vercel/next.js",
+      "priority": "low",
+      "category": "framework_examples",
+      "stars": 130000,
+      "description": "Next.js framework (examples folder)",
+      "frameworks": ["react"],
+      "path_filter": "examples/",
+      "expected_components": 50
+    }
+  ],
+
+  "scraping_config": {
+    "max_components_per_repo": 50,
+    "min_file_size": 100,
+    "max_file_size": 50000,
+    "file_extensions": [".tsx", ".jsx", ".vue", ".svelte"],
+    "ignore_patterns": [
+      "*.test.*",
+      "*.spec.*",
+      "*.stories.*",
+      "__tests__",
+      ".d.ts"
+    ],
+    "rate_limit_seconds": 2,
+    "timeout_seconds": 30
+  },
+
+  "quality_filters": {
+    "min_stars": 500,
+    "require_typescript": false,
+    "require_tailwind": false,
+    "require_accessibility": false
+  }
+}

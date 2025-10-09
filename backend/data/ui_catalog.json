@@ -1,0 +1,378 @@
+{
+  "version": "1.0",
+  "total_repos": 125,
+  "categories": {
+    "component_libraries": {
+      "count": 11,
+      "description": "Pre-built component libraries (shadcn/ui, DaisyUI, Radix, etc.)",
+      "top_repos": [
+        {
+          "name": "shadcn-ui/ui",
+          "description": "A set of beautifully-designed, accessible components and a code distribution platform. Works with your favorite frameworks. Open Source. Open Code.",
+          "stars": 96240,
+          "github_url": "https://github.com/shadcn-ui/ui"
+        },
+        {
+          "name": "saadeghi/daisyui",
+          "description": "\ud83c\udf3c \ud83c\udf3c \ud83c\udf3c \ud83c\udf3c \ud83c\udf3c \u2003The most popular, free and open-source Tailwind CSS component library",
+          "stars": 38885,
+          "github_url": "https://github.com/saadeghi/daisyui"
+        },
+        {
+          "name": "tailwindlabs/headlessui",
+          "description": "Completely unstyled, fully accessible UI components, designed to integrate beautifully with Tailwind CSS.",
+          "stars": 28011,
+          "github_url": "https://github.com/tailwindlabs/headlessui"
+        },
+        {
+          "name": "magicuidesign/magicui",
+          "description": "UI Library for Design Engineers. Animated components and effects you can copy and paste into your apps. Free. Open Source.",
+          "stars": 19126,
+          "github_url": "https://github.com/magicuidesign/magicui"
+        },
+        {
+          "name": "shadcn-ui/taxonomy",
+          "description": "An open source application built using the new router, server components and everything new in Next.js 13.",
+          "stars": 19041,
+          "github_url": "https://github.com/shadcn-ui/taxonomy"
+        },
+        {
+          "name": "radix-ui/primitives",
+          "description": "Radix Primitives is an open-source UI component library for building high-quality, accessible design systems and web apps. Maintained by @workos.",
+          "stars": 17964,
+          "github_url": "https://github.com/radix-ui/primitives"
+        },
+        {
+          "name": "udecode/plate",
+          "description": "Rich-text editor with AI, MCP, and shadcn/ui",
+          "stars": 15220,
+          "github_url": "https://github.com/udecode/plate"
+        },
+        {
+          "name": "unovue/shadcn-vue",
+          "description": "Vue port of shadcn-ui",
+          "stars": 8316,
+          "github_url": "https://github.com/unovue/shadcn-vue"
+        },
+        {
+          "name": "huntabyte/shadcn-svelte",
+          "description": "shadcn/ui, but for Svelte. \u2728",
+          "stars": 7505,
+          "github_url": "https://github.com/huntabyte/shadcn-svelte"
+        },
+        {
+          "name": "founded-labs/react-native-reusables",
+          "description": "Bringing shadcn/ui to React Native. Beautifully crafted components with Nativewind, open source, and almost as easy to use.",
+          "stars": 7064,
+          "github_url": "https://github.com/founded-labs/react-native-reusables"
+        }
+      ]
+    },
+    "css_frameworks": {
+      "count": 5,
+      "description": "CSS frameworks (Tailwind, Bootstrap, etc.)",
+      "top_repos": [
+        {
+          "name": "tailwindlabs/tailwindcss",
+          "description": "A utility-first CSS framework for rapid UI development.",
+          "stars": 90474,
+          "github_url": "https://github.com/tailwindlabs/tailwindcss"
+        },
+        {
+          "name": "tabler/tabler",
+          "description": "Tabler is free and open-source HTML Dashboard UI Kit built on Bootstrap",
+          "stars": 40146,
+          "github_url": "https://github.com/tabler/tabler"
+        },
+        {
+          "name": "froala/design-blocks",
+          "description": "A set of 170+ Bootstrap based design blocks ready to be used to create clean modern websites.",
+          "stars": 13774,
+          "github_url": "https://github.com/froala/design-blocks"
+        },
+        {
+          "name": "troxler/awesome-css-frameworks",
+          "description": "List of awesome CSS frameworks in 2025",
+          "stars": 8922,
+          "github_url": "https://github.com/troxler/awesome-css-frameworks"
+        },
+        {
+          "name": "SyntaxUI/syntaxui",
+          "description": "Get free access to pre-built, Tailwind CSS-powered components, animations and effects - brought to life using Framer Motion. Just copy, paste and you're ready to go!",
+          "stars": 969,
+          "github_url": "https://github.com/SyntaxUI/syntaxui"
+        }
+      ]
+    },
+    "react_ui": {
+      "count": 3,
+      "description": "React component libraries and UI kits",
+      "top_repos": [
+        {
+          "name": "brillout/awesome-react-components",
+          "description": "Curated List of React Components & Libraries.",
+          "stars": 45720,
+          "github_url": "https://github.com/brillout/awesome-react-components"
+        },
+        {
+          "name": "tremorlabs/tremor-npm",
+          "description": "React components to build charts and dashboards",
+          "stars": 16448,
+          "github_url": "https://github.com/tremorlabs/tremor-npm"
+        },
+        {
+          "name": "tremorlabs/tremor",
+          "description": "Copy & Paste React components to build modern web applications. ",
+          "stars": 2978,
+          "github_url": "https://github.com/tremorlabs/tremor"
+        }
+      ]
+    },
+    "vue_ui": {
+      "count": 1,
+      "description": "Vue.js component libraries and UI kits",
+      "top_repos": [
+        {
+          "name": "vuejs/awesome-vue",
+          "description": "\ud83c\udf89 A curated list of awesome things related to Vue.js",
+          "stars": 73290,
+          "github_url": "https://github.com/vuejs/awesome-vue"
+        }
+      ]
+    },
+    "dashboards": {
+      "count": 8,
+      "description": "Dashboard templates and admin panels",
+      "top_repos": [
+        {
+          "name": "h5bp/html5-boilerplate",
+          "description": "A professional front-end template for building fast, robust, and adaptable web apps or sites.",
+          "stars": 57180,
+          "github_url": "https://github.com/h5bp/html5-boilerplate"
+        },
+        {
+          "name": "awesome-foss/awesome-sysadmin",
+          "description": "A curated list of amazingly awesome open-source sysadmin resources.",
+          "stars": 31217,
+          "github_url": "https://github.com/awesome-foss/awesome-sysadmin"
+        },
+        {
+          "name": "pure-admin/vue-pure-admin",
+          "description": "\u5168\u9762ESM+Vue3+Vite+Element-Plus+TypeScript\u7f16\u5199\u7684\u4e00\u6b3e\u540e\u53f0\u7ba1\u7406\u7cfb\u7edf\uff08\u517c\u5bb9\u79fb\u52a8\u7aef\uff09",
+          "stars": 18973,
+          "github_url": "https://github.com/pure-admin/vue-pure-admin"
+        },
+        {
+          "name": "cobiwave/simplefolio",
+          "description": "\u26a1\ufe0f A minimal portfolio template for Developers",
+          "stars": 13989,
+          "github_url": "https://github.com/cobiwave/simplefolio"
+        },
+        {
+          "name": "resumejob/awesome-resume",
+          "description": "Resume\uff0cResume Templates\uff0c\u7a0b\u5e8f\u5458\u7b80\u5386\u4f8b\u53e5\uff0c\u7b80\u5386\u6a21\u7248\uff0c",
+          "stars": 7075,
+          "github_url": "https://github.com/resumejob/awesome-resume"
+        },
+        {
+          "name": "sproogen/modern-resume-theme",
+          "description": "A modern static resume template and theme. Powered by Jekyll and GitHub pages.",
+          "stars": 2225,
+          "github_url": "https://github.com/sproogen/modern-resume-theme"
+        },
+        {
+          "name": "jglovier/resume-template",
+          "description": ":page_facing_up::briefcase::tophat: A simple Jekyll + GitHub Pages powered resume template.",
+          "stars": 1930,
+          "github_url": "https://github.com/jglovier/resume-template"
+        },
+        {
+          "name": "elipapa/markdown-cv",
+          "description": "a simple template to write your CV in a readable markdown file and use CSS to publish/print it.",
+          "stars": 1445,
+          "github_url": "https://github.com/elipapa/markdown-cv"
+        }
+      ]
+    },
+    "animation": {
+      "count": 1,
+      "description": "Animation libraries and effects",
+      "top_repos": [
+        {
+          "name": "dubinc/dub",
+          "description": "The modern link attribution platform. Loved by world-class marketing teams like Framer, Perplexity, Superhuman, Twilio, Buffer and more.",
+          "stars": 22409,
+          "github_url": "https://github.com/dubinc/dub"
+        }
+      ]
+    },
+    "charts_graphs": {
+      "count": 15,
+      "description": "Data visualization, charts, and diagrams",
+      "top_repos": [
+        {
+          "name": "excalidraw/excalidraw",
+          "description": "Virtual whiteboard for sketching hand-drawn like diagrams",
+          "stars": 108093,
+          "github_url": "https://github.com/excalidraw/excalidraw"
+        },
+        {
+          "name": "mermaid-js/mermaid",
+          "description": "Generation of diagrams like flowcharts or sequence diagrams from text in a similar manner as markdown",
+          "stars": 83302,
+          "github_url": "https://github.com/mermaid-js/mermaid"
+        },
+        {
+          "name": "chartjs/Chart.js",
+          "description": "Simple HTML5 Charts using the <canvas> tag",
+          "stars": 66609,
+          "github_url": "https://github.com/chartjs/Chart.js"
+        },
+        {
+          "name": "xyflow/xyflow",
+          "description": "React Flow |\u00a0Svelte Flow - Powerful open source libraries for building node-based UIs with React (https://reactflow.dev) or Svelte (https://svelteflow.dev). Ready out-of-the-box and infinitely customizable.",
+          "stars": 31834,
+          "github_url": "https://github.com/xyflow/xyflow"
+        },
+        {
+          "name": "alyssaxuu/flowy",
+          "description": "The minimal javascript library to create flowcharts \u2728",
+          "stars": 11870,
+          "github_url": "https://github.com/alyssaxuu/flowy"
+        },
+        {
+          "name": "cytoscape/cytoscape.js",
+          "description": "Graph theory (network) library for visualisation and analysis",
+          "stars": 10646,
+          "github_url": "https://github.com/cytoscape/cytoscape.js"
+        },
+        {
+          "name": "antvis/X6",
+          "description": "\ud83d\ude80 JavaScript diagramming library that uses SVG and HTML for rendering.",
+          "stars": 6227,
+          "github_url": "https://github.com/antvis/X6"
+        },
+        {
+          "name": "bcakmakoglu/vue-flow",
+          "description": "A highly customizable Flowchart component for Vue 3. Features seamless zoom & pan \ud83d\udd0e, additional components like a Minimap \ud83d\uddfa and utilities to interact with state and graph.",
+          "stars": 5710,
+          "github_url": "https://github.com/bcakmakoglu/vue-flow"
+        },
+        {
+          "name": "mermaid-js/mermaid-live-editor",
+          "description": "Edit, preview and share mermaid charts/diagrams. New implementation of the live editor.",
+          "stars": 5624,
+          "github_url": "https://github.com/mermaid-js/mermaid-live-editor"
+        },
+        {
+          "name": "jerosoler/Drawflow",
+          "description": "Simple flow library \ud83d\udda5\ufe0f\ud83d\uddb1\ufe0f",
+          "stars": 5491,
+          "github_url": "https://github.com/jerosoler/Drawflow"
+        }
+      ]
+    },
+    "icons_assets": {
+      "count": 1,
+      "description": "Icon sets and visual assets",
+      "top_repos": [
+        {
+          "name": "fabricjs/fabric.js",
+          "description": "Javascript Canvas Library, SVG-to-Canvas (& canvas-to-SVG) Parser",
+          "stars": 30458,
+          "github_url": "https://github.com/fabricjs/fabric.js"
+        }
+      ]
+    },
+    "forms_inputs": {
+      "count": 3,
+      "description": "Form builders and input components",
+      "top_repos": [
+        {
+          "name": "binhnguyennus/awesome-scalability",
+          "description": "The Patterns of Scalable, Reliable, and Performant Large-Scale Systems",
+          "stars": 65816,
+          "github_url": "https://github.com/binhnguyennus/awesome-scalability"
+        },
+        {
+          "name": "vantezzen/autoform",
+          "description": "\ud83c\udf1f Automatically render forms for your existing data schema",
+          "stars": 3407,
+          "github_url": "https://github.com/vantezzen/autoform"
+        },
+        {
+          "name": "jsonresume/resume-schema",
+          "description": "JSON-Schema is used here to define and validate our proposed resume json",
+          "stars": 2289,
+          "github_url": "https://github.com/jsonresume/resume-schema"
+        }
+      ]
+    },
+    "other": {
+      "count": 77,
+      "description": "",
+      "top_repos": [
+        {
+          "name": "sindresorhus/awesome",
+          "description": "\ud83d\ude0e Awesome lists about all kinds of interesting topics",
+          "stars": 405061,
+          "github_url": "https://github.com/sindresorhus/awesome"
+        },
+        {
+          "name": "vinta/awesome-python",
+          "description": "An opinionated list of awesome Python frameworks, libraries, software and resources.",
+          "stars": 262989,
+          "github_url": "https://github.com/vinta/awesome-python"
+        },
+        {
+          "name": "awesome-selfhosted/awesome-selfhosted",
+          "description": "A list of Free Software network services and web applications which can be hosted on your own servers",
+          "stars": 251207,
+          "github_url": "https://github.com/awesome-selfhosted/awesome-selfhosted"
+        },
+        {
+          "name": "trimstray/the-book-of-secret-knowledge",
+          "description": "A collection of inspiring lists, manuals, cheatsheets, blogs, hacks, one-liners, cli/web tools and more.",
+          "stars": 188785,
+          "github_url": "https://github.com/trimstray/the-book-of-secret-knowledge"
+        },
+        {
+          "name": "avelino/awesome-go",
+          "description": "A curated list of awesome Go frameworks, libraries and software",
+          "stars": 154047,
+          "github_url": "https://github.com/avelino/awesome-go"
+        },
+        {
+          "name": "mrdoob/three.js",
+          "description": "JavaScript 3D Library.",
+          "stars": 108853,
+          "github_url": "https://github.com/mrdoob/three.js"
+        },
+        {
+          "name": "papers-we-love/papers-we-love",
+          "description": "Papers from the computer science community to read and discuss.",
+          "stars": 98909,
+          "github_url": "https://github.com/papers-we-love/papers-we-love"
+        },
+        {
+          "name": "Hack-with-Github/Awesome-Hacking",
+          "description": "A collection of various awesome lists for hackers, pentesters and security researchers",
+          "stars": 98647,
+          "github_url": "https://github.com/Hack-with-Github/Awesome-Hacking"
+        },
+        {
+          "name": "jaywcjlove/awesome-mac",
+          "description": "\uf8ff Now we have become very big, Different from the original idea. Collect premium software in various categories.",
+          "stars": 89316,
+          "github_url": "https://github.com/jaywcjlove/awesome-mac"
+        },
+        {
+          "name": "MunGell/awesome-for-beginners",
+          "description": "A list of awesome beginners-friendly projects.",
+          "stars": 78331,
+          "github_url": "https://github.com/MunGell/awesome-for-beginners"
+        }
+      ]
+    }
+  }
+}
