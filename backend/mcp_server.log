@@ -1,0 +1,12 @@
+✅ Hive-Mind DB initialized at swarms/mcp_swarm.db
+Traceback (most recent call last):
+  File "/Users/matto/Documents/AI CHAT/my-app/backend/mcp_servers.py", line 39, in <module>
+    grok_client = OpenAI(
+        api_key=os.getenv('OPENROUTER_API_KEY'),
+        base_url="https://openrouter.ai/api/v1"
+    )
+  File "/Users/matto/Documents/AI CHAT/my-app/backend/venv/lib/python3.13/site-packages/openai/_client.py", line 105, in __init__
+    raise OpenAIError(
+        "The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable"
+    )
+openai.OpenAIError: The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable

@@ -920,9 +920,9 @@ export function AnimatedAIChat() {
                 <AnimatePresence>
                     {showCode && (
                         <motion.div 
-                            className="fixed right-0 top-0 z-50 shadow-2xl"
+                            className="fixed right-0 top-0 z-[55] shadow-2xl"
                             style={{ 
-                                height: `${codeHeight}vh`,
+                                height: showBottomPanel ? `${codeHeight}vh` : '100vh',
                                 width: `${rightPanelWidth}px`
                             }}
                             initial={{ opacity: 0, y: -600 }}
@@ -974,7 +974,7 @@ export function AnimatedAIChat() {
                     className="fixed right-0 z-[60] flex items-center justify-center"
                     style={{ 
                         top: `${codeHeight}vh`,
-                        height: '6px',
+                        height: '4px',
                         width: `${rightPanelWidth}px`,
                         cursor: isResizeLocked ? 'default' : 'ns-resize'
                     }}
@@ -985,7 +985,7 @@ export function AnimatedAIChat() {
                     <div 
                         className={cn(
                             "w-full h-full flex items-center justify-center transition-all",
-                            isDragging ? "bg-violet-500/50" : "bg-white/10 hover:bg-violet-500/30",
+                            isDragging ? "bg-violet-500/50" : "bg-white/5 hover:bg-violet-500/30",
                             isResizeLocked && "opacity-50"
                         )}
                         onMouseDown={handleMouseDown}
@@ -1008,16 +1008,17 @@ export function AnimatedAIChat() {
                 </motion.div>
             )}
 
-            {/* Bottom Panel - Terminal/Debug/Logs - Aligns under code window */}
+            {/* Bottom Panel - Terminal/Debug/Logs - Fixed at bottom */}
             {isMounted && (
                 <AnimatePresence>
                     {showBottomPanel && (
                         <motion.div 
-                            className="fixed right-0 bottom-0 z-50 shadow-2xl"
+                            className="fixed right-0 z-50 shadow-2xl"
                             style={{ 
                                 height: showCode ? `${100 - codeHeight}vh` : '45vh',
-                                top: showCode ? `${codeHeight}vh` : 'auto',
-                                width: `${rightPanelWidth}px`
+                                width: `${rightPanelWidth}px`,
+                                bottom: '0px',
+                                top: showCode ? `${codeHeight}vh` : 'auto'
                             }}
                             initial={{ opacity: 0, y: 500 }}
                             animate={{ opacity: 1, y: 0 }}

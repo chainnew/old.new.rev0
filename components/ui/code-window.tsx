@@ -6,7 +6,8 @@ import {
   Copy, Check, Trash2, Download, Code2, FileCode, 
   Folder, FolderOpen, File, Plus, Edit3, X, 
   ChevronRight, ChevronDown, Search, MoreVertical,
-  GripVertical, Lock, Unlock, Monitor, RefreshCw
+  GripVertical, Lock, Unlock, Monitor, RefreshCw, FileUp,
+  Scissors, Info, Edit, FolderEdit
 } from "lucide-react";
 import { sanitizeUrl } from "@/lib/sanitize-url";
 import { cn } from "@/lib/utils";
@@ -110,6 +111,10 @@ export function CodeWindow() {
   const [isResizingExplorer, setIsResizingExplorer] = useState(false);
   const [activeView, setActiveView] = useState<'code' | 'preview'>('code');
   const [previewUrl, setPreviewUrl] = useState('http://localhost:3000');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null);
+  const [clipboard, setClipboard] = useState<{ node: FileNode; action: 'cut' | 'copy' } | null>(null);
+  const [renamingNode, setRenamingNode] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const handleCopy = async (code: string) => {
     await navigator.clipboard.writeText(code);
@@ -207,37 +212,111 @@ export function CodeWindow() {
   const activeTabData = openTabs.find(tab => tab.id === activeTab);
 
   // Render file tree recursively
+  const handleContextMenu = (e: React.MouseEvent, node: FileNode) => {
+    e.preventDefault();
+    
+    // Get click position and adjust to prevent menu from going off-screen
+    const menuWidth = 180;
+    const menuHeight = 220;
+    const x = e.clientX + menuWidth > window.innerWidth 
+      ? e.clientX - menuWidth 
+      : e.clientX;
+    const y = e.clientY + menuHeight > window.innerHeight
+      ? e.clientY - menuHeight
+      : e.clientY;
+    
+    setContextMenu({ x, y, node });
+  };
+
+  const handleRename = (node: FileNode) => {
+    setRenamingNode(node.id);
+    setRenameValue(node.name);
+    setContextMenu(null);
+  };
+
+  const confirmRename = (nodeId: string) => {
+    // TODO: Implement actual rename in file tree
+    console.log('Rename', nodeId, 'to', renameValue);
+    setRenamingNode(null);
+  };
+
+  const handleDelete = (node: FileNode) => {
+    // TODO: Implement actual delete from file tree
+    console.log('Delete', node.name);
+    setContextMenu(null);
+  };
+
+  const handleCut = (node: FileNode) => {
+    setClipboard({ node, action: 'cut' });
+    setContextMenu(null);
+  };
+
+  const handleCopyNode = (node: FileNode) => {
+    setClipboard({ node, action: 'copy' });
+    setContextMenu(null);
+  };
+
+  const handleInfo = (node: FileNode) => {
+    console.log('File info:', node);
+    alert(`File: ${node.name}\nPath: ${node.path || 'N/A'}\nType: ${node.type}`);
+    setContextMenu(null);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const renderFileTree = (nodes: FileNode[], depth: number = 0) => {
     return nodes.map(node => (
       <div key={node.id}>
-        <button
-          onClick={() => node.type === 'folder' ? toggleFolder(node.id) : openFile(node)}
-          className={cn(
-            "w-full flex items-center gap-2 px-2 py-1 text-xs hover:bg-white/5 transition-colors group",
-            activeTab === node.id && "bg-violet-500/10"
-          )}
-          style={{ paddingLeft: `${8 + depth * 16}px` }}
-        >
-          {node.type === 'folder' ? (
-            <>
-              {expandedFolders.has(node.id) ? (
-                <ChevronDown className="w-3 h-3 text-white/40" />
-              ) : (
-                <ChevronRight className="w-3 h-3 text-white/40" />
-              )}
-              {expandedFolders.has(node.id) ? (
-                <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
-              ) : (
-                <Folder className="w-3.5 h-3.5 text-violet-400" />
-              )}
-            </>
-          ) : (
-            <File className="w-3.5 h-3.5 text-white/50 ml-5" />
-          )}
-          <span className="text-white/70 truncate group-hover:text-white/90">
-            {node.name}
-          </span>
-        </button>
+        {renamingNode === node.id ? (
+          <div style={{ paddingLeft: `${8 + depth * 16}px` }} className="px-2 py-1">
+            <input
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onBlur={() => confirmRename(node.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmRename(node.id);
+                if (e.key === 'Escape') setRenamingNode(null);
+              }}
+              autoFocus
+              className="w-full px-1 py-0.5 text-xs bg-white/10 border border-violet-500/50 rounded text-white/90 focus:outline-none"
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => node.type === 'folder' ? toggleFolder(node.id) : openFile(node)}
+            onContextMenu={(e) => handleContextMenu(e, node)}
+            className={cn(
+              "w-full flex items-center gap-2 px-2 py-1 text-xs hover:bg-white/5 transition-colors group",
+              activeTab === node.id && "bg-violet-500/10"
+            )}
+            style={{ paddingLeft: `${8 + depth * 16}px` }}
+          >
+            {node.type === 'folder' ? (
+              <>
+                {expandedFolders.has(node.id) ? (
+                  <ChevronDown className="w-3 h-3 text-white/40" />
+                ) : (
+                  <ChevronRight className="w-3 h-3 text-white/40" />
+                )}
+                {expandedFolders.has(node.id) ? (
+                  <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
+                ) : (
+                  <Folder className="w-3.5 h-3.5 text-violet-400" />
+                )}
+              </>
+            ) : (
+              <File className="w-3.5 h-3.5 text-white/50 ml-5" />
+            )}
+            <span className="text-white/70 truncate group-hover:text-white/90">
+              {node.name}
+            </span>
+          </button>
+        )}
         {node.type === 'folder' && node.children && expandedFolders.has(node.id) && (
           <div>
             {renderFileTree(node.children, depth + 1)}
@@ -248,7 +327,7 @@ export function CodeWindow() {
   };
 
   return (
-    <div className="h-full flex bg-black/60 backdrop-blur-sm rounded-l-xl relative" data-code-window>
+    <div className="h-full flex bg-black/60 backdrop-blur-sm border-b border-white/10 relative" data-code-window>
       {/* File Explorer - Left Side */}
       <div className="flex flex-col border-r border-white/10 bg-white/[0.01]" style={{ width: `${explorerWidth}px` }}>
         {/* Explorer Header */}
@@ -279,8 +358,28 @@ export function CodeWindow() {
         </div>
 
         {/* Explorer Footer */}
-        <div className="px-3 py-2 border-t border-white/10 bg-white/[0.02] text-[10px] text-white/40">
-          <div>Files: {fileTree.length} | Tabs: {openTabs.length}</div>
+        <div className="px-3 py-2 border-t border-white/10 bg-white/[0.02]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] text-white/40">Files: {fileTree.length} | Tabs: {openTabs.length}</span>
+          </div>
+          <button 
+            onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.webkitdirectory = true;
+              input.multiple = true;
+              input.onchange = (e: any) => {
+                const files = Array.from(e.target.files);
+                console.log('Uploaded project files:', files);
+                // TODO: Process uploaded files and add to file tree
+              };
+              input.click();
+            }}
+            className="w-full px-3 py-1.5 text-xs font-medium bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 rounded transition-colors flex items-center justify-center gap-2"
+          >
+            <FileUp className="w-3.5 h-3.5" />
+            Upload Project
+          </button>
         </div>
       </div>
 
@@ -466,6 +565,69 @@ export function CodeWindow() {
           </div>
         )}
       </div>
+
+      {/* Context Menu */}
+      <AnimatePresence>
+        {contextMenu && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.1 }}
+            className="fixed z-[100] bg-black/90 backdrop-blur-sm border border-white/20 rounded-lg shadow-2xl py-1 min-w-[180px]"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+            }}
+          >
+            <button
+              onClick={() => handleRename(contextMenu.node)}
+              className="w-full px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 flex items-center gap-2 transition-colors"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              Rename
+            </button>
+            <button
+              onClick={() => contextMenu.node.type === 'file' && openFile(contextMenu.node)}
+              className="w-full px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 flex items-center gap-2 transition-colors"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              Edit
+            </button>
+            <div className="h-px bg-white/10 my-1" />
+            <button
+              onClick={() => handleCut(contextMenu.node)}
+              className="w-full px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 flex items-center gap-2 transition-colors"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              Cut
+            </button>
+            <button
+              onClick={() => handleCopyNode(contextMenu.node)}
+              className="w-full px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 flex items-center gap-2 transition-colors"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Copy
+            </button>
+            <div className="h-px bg-white/10 my-1" />
+            <button
+              onClick={() => handleDelete(contextMenu.node)}
+              className="w-full px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
+            <div className="h-px bg-white/10 my-1" />
+            <button
+              onClick={() => handleInfo(contextMenu.node)}
+              className="w-full px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 flex items-center gap-2 transition-colors"
+            >
+              <Info className="w-3.5 h-3.5" />
+              Info
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

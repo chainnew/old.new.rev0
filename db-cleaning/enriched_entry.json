@@ -1,0 +1,88 @@
+{
+  "full_name": "ashishps1/awesome-system-design-resources",
+  "description": "Learn System Design concepts and prepare for interviews using free resources.",
+  "stars": 26566,
+  "files": [
+    {
+      "name": "LICENSE",
+      "path": "LICENSE",
+      "sha": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "size": 35149,
+      "url": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/contents/LICENSE?ref=main",
+      "html_url": "https://github.com/ashishps1/awesome-system-design-resources/blob/main/LICENSE",
+      "git_url": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/git/blobs/f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "download_url": "https://raw.githubusercontent.com/ashishps1/awesome-system-design-resources/main/LICENSE",
+      "type": "file",
+      "_links": {
+        "self": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/contents/LICENSE?ref=main",
+        "git": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/git/blobs/f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+        "html": "https://github.com/ashishps1/awesome-system-design-resources/blob/main/LICENSE"
+      }
+    },
+    {
+      "name": "README.md",
+      "path": "README.md",
+      "sha": "67afb214f671919ff0e1d69e2e1bdc20895ffd11",
+      "size": 12697,
+      "url": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/contents/README.md?ref=main",
+      "html_url": "https://github.com/ashishps1/awesome-system-design-resources/blob/main/README.md",
+      "git_url": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/git/blobs/67afb214f671919ff0e1d69e2e1bdc20895ffd11",
+      "download_url": "https://raw.githubusercontent.com/ashishps1/awesome-system-design-resources/main/README.md",
+      "type": "file",
+      "_links": {
+        "self": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/contents/README.md?ref=main",
+        "git": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/git/blobs/67afb214f671919ff0e1d69e2e1bdc20895ffd11",
+        "html": "https://github.com/ashishps1/awesome-system-design-resources/blob/main/README.md"
+      }
+    },
+    {
+      "name": "diagrams",
+      "path": "diagrams",
+      "sha": "9bd2836315893bad60e3c04d000ea34bb7bbdab9",
+      "size": 0,
+      "url": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/contents/diagrams?ref=main",
+      "html_url": "https://github.com/ashishps1/awesome-system-design-resources/tree/main/diagrams",
+      "git_url": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/git/trees/9bd2836315893bad60e3c04d000ea34bb7bbdab9",
+      "download_url": null,
+      "type": "dir",
+      "_links": {
+        "self": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/contents/diagrams?ref=main",
+        "git": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/git/trees/9bd2836315893bad60e3c04d000ea34bb7bbdab9",
+        "html": "https://github.com/ashishps1/awesome-system-design-resources/tree/main/diagrams"
+      }
+    },
+    {
+      "name": "implementations",
+      "path": "implementations",
+      "sha": "a82ea5bf643226a5b05ff93ff9c95c3b30d33584",
+      "size": 0,
+      "url": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/contents/implementations?ref=main",
+      "html_url": "https://github.com/ashishps1/awesome-system-design-resources/tree/main/implementations",
+      "git_url": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/git/trees/a82ea5bf643226a5b05ff93ff9c95c3b30d33584",
+      "download_url": null,
+      "type": "dir",
+      "_links": {
+        "self": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/contents/implementations?ref=main",
+        "git": "https://api.github.com/repos/ashishps1/awesome-system-design-resources/git/trees/a82ea5bf643226a5b05ff93ff9c95c3b30d33584",
+        "html": "https://github.com/ashishps1/awesome-system-design-resources/tree/main/implementations"
+      }
+    }
+  ],
+  "readme": "<p align=\"center\">\n  <img src=\"diagrams/system-design-github-logo.png\" width=\"350\" height=\"200\">\n</p>\n\nThis repository contains free resources to learn System Design concepts and prepare for interviews.\n\n👉 Subscribe to my [AlgoMaster Newsletter](https://bit.ly/amghsd) and get a **FREE System Design Interview Handbook** in your inbox.\n\n✅ If you are new to System Design, start here: [System Design was HARD until I Learned these 30 Concepts](https://blog.algomaster.io/p/30-system-design-concepts)\n\n## 📌 System Design Key Concepts\n- [Scalability](https://blog.algomaster.io/p/scalability)\n- [Availability](https://blog.algomaster.io/p/system-design-what-is-availability)\n- [CAP Theorem](https://blog.algomaster.io/p/cap-theorem-explained)\n- [ACID Transactions](https://blog.algomaster.io/p/what-are-acid-transactions-in-databases)\n- [Consistent Hashing](https://blog.algomaster.io/p/consistent-hashing-explained)\n- [Rate Limiting](https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code)\n- [SPOF](https://blog.algomaster.io/p/system-design-how-to-avoid-single-point-of-failures)\n- [Fault Tolerance](https://www.cockroachlabs.com/blog/what-is-fault-tolerance/)\n- [Consensus Algorithms](https://medium.com/@sourabhatta1819/consensus-in-distributed-system-ac79f8ba2b8c)\n- [Gossip Protocol](http://highscalability.com/blog/2023/7/16/gossip-protocol-explained.html)\n- [Service Discovery](https://blog.algomaster.io/p/service-discovery-in-distributed-systems)\n- [API Design](https://abdulrwahab.medium.com/api-architecture-best-practices-for-designing-rest-apis-bf907025f5f)\n- [Disaster Recovery](https://cloud.google.com/learn/what-is-disaster-recovery)\n- [Distributed Tracing](https://www.dynatrace.com/news/blog/what-is-distributed-tracing/)\n\n## 🛠️ System Design Building Blocks\n- [APIs](https://blog.algomaster.io/p/whats-an-api)\n- [Content Delivery Network (CDN)](https://blog.algomaster.io/p/content-delivery-networks)\n- [Proxy vs Reverse Proxy](https://blog.algomaster.io/p/proxy-vs-reverse-proxy-explained)\n- [Domain Name System (DNS)](https://www.cloudflare.com/learning/dns/what-is-dns/)\n- [Caching](https://blog.algomaster.io/p/4d7d6f8a-6803-4c7b-85ca-864c87c2cbf2)\n- [Caching Strategies](https://blog.algomaster.io/p/top-5-caching-strategies-explained)\n- [Distributed Caching](https://blog.algomaster.io/p/distributed-caching)\n- [API Gateway](https://blog.algomaster.io/p/what-is-an-api-gateway)\n- [Load Balancing](https://blog.algomaster.io/p/load-balancing-algorithms-explained-with-code)\n- [Databases Types](https://blog.algomaster.io/p/15-types-of-databases)\n- [SQL vs NoSQL](https://blog.algomaster.io/p/sql-vs-nosql-7-key-differences)\n- [Database Indexes](https://blog.algomaster.io/p/a-detailed-guide-on-database-indexes)\n- [Consistency Patterns](https://systemdesign.one/consistency-patterns/)\n- [HeartBeats](https://blog.algomaster.io/p/heartbeats-in-distributed-systems)\n- [Circuit Breaker](https://medium.com/geekculture/design-patterns-for-microservices-circuit-breaker-pattern-276249ffab33)\n- [Idempotency](https://blog.algomaster.io/p/idempotency-in-distributed-systems)\n- [Database Scaling](https://blog.algomaster.io/p/system-design-how-to-scale-a-database)\n- [Data Replication](https://redis.com/blog/what-is-data-replication/)\n- [Data Redundancy](https://blog.algomaster.io/p/489440f1-9c80-4241-9ec8-de156964c3b9)\n- [Database Sharding](https://blog.algomaster.io/p/what-is-database-sharding)\n- [Database Architectures](https://www.mongodb.com/developer/products/mongodb/active-active-application-architectures/)\n- [Failover](https://www.druva.com/glossary/what-is-a-failover-definition-and-related-faqs)\n- [Bloom Filters](https://blog.algomaster.io/p/bloom-filters)\n- [Message Queues](https://blog.algomaster.io/p/message-queues)\n- [WebSockets](https://blog.algomaster.io/p/websockets)\n- [Checksums](https://blog.algomaster.io/p/what-are-checksums)\n- [Microservices Guidelines](https://newsletter.systemdesign.one/p/netflix-microservices) \n- [Distributed Locking](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html)\n\n## ⚖️ System Design Tradeoffs\n- [Top 15 Tradeoffs](https://blog.algomaster.io/p/system-design-top-15-trade-offs)\n- [Vertical vs Horizontal Scaling](https://blog.algomaster.io/p/system-design-vertical-vs-horizontal-scaling)\n- [Concurrency vs Parallelism](https://blog.algomaster.io/p/concurrency-vs-parallelism)\n- [Long Polling vs WebSockets](https://blog.algomaster.io/p/long-polling-vs-websockets)\n- [Batch vs Stream Processing](https://blog.algomaster.io/p/batch-processing-vs-stream-processing)\n- [Stateful vs Stateless Design](https://blog.algomaster.io/p/stateful-vs-stateless-architecture)\n- [Strong vs Eventual Consistency](https://blog.algomaster.io/p/strong-vs-eventual-consistency)\n- [Read-Through vs Write-Through Cache](https://blog.algomaster.io/p/59cae60d-9717-4e20-a59e-759e370db4e5)\n- [Push vs Pull Architecture](https://blog.algomaster.io/p/af5fe2fe-9a4f-4708-af43-184945a243af)\n- [REST vs RPC](https://blog.algomaster.io/p/106604fb-b746-41de-88fb-60e932b2ff68)\n- [Synchronous vs. asynchronous communications](https://blog.algomaster.io/p/aec1cebf-6060-45a7-8e00-47364ca70761)\n- [Latency vs Throughput](https://aws.amazon.com/compare/the-difference-between-throughput-and-latency/)\n\n## 🖇️ System Design Architectural Patterns\n- [Client-Server Architecture](https://blog.algomaster.io/p/client-server-architecture-explained)\n- [Microservices Architecture](https://medium.com/hashmapinc/the-what-why-and-how-of-a-microservices-architecture-4179579423a9)\n- [Serverless Architecture](https://blog.algomaster.io/p/2edeb23b-cfa5-4b24-845e-3f6f7a39d162)\n- [Event-Driven Architecture](https://www.confluent.io/learn/event-driven-architecture/)\n- [Peer-to-Peer (P2P) Architecture](https://www.spiceworks.com/tech/networking/articles/what-is-peer-to-peer/)\n\n## ✅ [How to Answer a System Design Interview Problem](https://blog.algomaster.io/p/how-to-answer-a-system-design-interview-problem)\n\n## 💻 System Design Interview Problems\n### Easy\n- [Design URL Shortener like TinyURL](https://blog.algomaster.io/p/design-a-url-shortener)\n- [Design Content Delivery Network (CDN)](https://www.youtube.com/watch?v=8zX0rue2Hic)\n- [Design Parking Garage](https://www.youtube.com/watch?v=NtMvNh0WFVM)\n- [Design Vending Machine](https://www.youtube.com/watch?v=D0kDMUgo27c)\n- [Design Distributed Key-Value Store](https://www.youtube.com/watch?v=rnZmdmlR-2M)\n- [Design Distributed Cache](https://www.youtube.com/watch?v=iuqZvajTOyA)\n- [Design Authentication System](https://www.youtube.com/watch?v=uj_4vxm9u90)\n- [Design Unified Payments Interface (UPI)](https://www.youtube.com/watch?v=QpLy0_c_RXk)\n### Medium\n- [Design WhatsApp](https://blog.algomaster.io/p/design-a-chat-application-like-whatsapp)\n- [Design Spotify](https://blog.algomaster.io/p/design-spotify-system-design-interview)\n- [Design Distributed Job Scheduler](https://blog.algomaster.io/p/design-a-distributed-job-scheduler)\n- [Design a Scalable Notification Service](https://blog.algomaster.io/p/design-a-scalable-notification-service)\n- [Design Instagram](https://www.youtube.com/watch?v=VJpfO6KdyWE)\n- [Design Tinder](https://www.youtube.com/watch?v=tndzLznxq40)\n- [Design Facebook](https://www.youtube.com/watch?v=9-hjBGxuiEs)\n- [Design Twitter](https://www.youtube.com/watch?v=wYk0xPP_P_8)\n- [Design Reddit](https://www.youtube.com/watch?v=KYExYE_9nIY)\n- [Design Netflix](https://www.youtube.com/watch?v=psQzyFfsUGU)\n- [Design Youtube](https://www.youtube.com/watch?v=jPKTo1iGQiE)\n- [Design Google Search](https://www.youtube.com/watch?v=CeGtqouT8eA)\n- [Design E-commerce Store like Amazon](https://www.youtube.com/watch?v=EpASu_1dUdE)\n- [Design TikTok](https://www.youtube.com/watch?v=Z-0g_aJL5Fw)\n- [Design Shopify](https://www.youtube.com/watch?v=lEL4F_0J3l8)\n- [Design Airbnb](https://www.youtube.com/watch?v=YyOXt2MEkv4)\n- [Design Autocomplete for Search Engines](https://www.youtube.com/watch?v=us0qySiUsGU)\n- [Design Rate Limiter](https://www.youtube.com/watch?v=mhUQe4BKZXs)\n- [Design Distributed Message Queue like Kafka](https://www.youtube.com/watch?v=iJLL-KPqBpM)\n- [Design Flight Booking System](https://www.youtube.com/watch?v=qsGcfVGvFSs)\n- [Design Online Code Editor](https://www.youtube.com/watch?v=07jkn4jUtso)\n- [Design an Analytics Platform (Metrics & Logging)](https://www.youtube.com/watch?v=kIcq1_pBQSY)\n- [Design Payment System](https://www.youtube.com/watch?v=olfaBgJrUBI)\n- [Design a Digital Wallet](https://www.youtube.com/watch?v=4ijjIUeq6hE)\n### Hard\n- [Design Location Based Service like Yelp](https://www.youtube.com/watch?v=M4lR_Va97cQ)\n- [Design Uber](https://www.youtube.com/watch?v=umWABit-wbk)\n- [Design Food Delivery App like Doordash](https://www.youtube.com/watch?v=iRhSAR3ldTw)\n- [Design Google Docs](https://www.youtube.com/watch?v=2auwirNBvGg)\n- [Design Google Maps](https://www.youtube.com/watch?v=jk3yvVfNvds)\n- [Design Zoom](https://www.youtube.com/watch?v=G32ThJakeHk)\n- [Design Distributed Counter](https://systemdesign.one/distributed-counter-system-design/)\n- [Design File Sharing System like Dropbox](https://www.youtube.com/watch?v=U0xTu6E2CT8)\n- [Design Ticket Booking System like BookMyShow](https://www.youtube.com/watch?v=lBAwJgoO3Ek)\n- [Design Distributed Web Crawler](https://www.youtube.com/watch?v=BKZxZwUgL3Y)\n- [Design Code Deployment System](https://www.youtube.com/watch?v=q0KGYwNbf-0)\n- [Design Distributed Cloud Storage like S3](https://www.youtube.com/watch?v=UmWtcgC96X8)\n- [Design Distributed Locking Service](https://www.youtube.com/watch?v=v7x75aN9liM)\n- [Design Slack](https://systemdesign.one/slack-architecture/)\n- [Design Live Comments](https://systemdesign.one/live-comment-system-design/)\n\n## 📇 Courses\n- [Learn System Design - AlgoMaster.io](https://algomaster.io/learn/system-design/what-is-system-design)\n\n## 📚 Books\n- [Designing Data-Intensive Applications](https://www.amazon.in/dp/9352135245)\n\n## 📩 Newsletters\n- [AlgoMaster Newsletter](https://blog.algomaster.io/)\n\n## 📺 YouTube Channels\n- [Tech Dummies Narendra L](https://www.youtube.com/@TechDummiesNarendraL)\n- [Gaurav Sen](https://www.youtube.com/@gkcs)\n- [codeKarle](https://www.youtube.com/@codeKarle)\n- [ByteByteGo](https://www.youtube.com/@ByteByteGo)\n- [System Design Interview](https://www.youtube.com/@SystemDesignInterview)\n- [sudoCODE](https://www.youtube.com/@sudocode)\n- [Success in Tech](https://www.youtube.com/@SuccessinTech/videos)\n\n## 📜 Must-Read Engineering Articles\n- [How Discord stores trillions of messages](https://discord.com/blog/how-discord-stores-trillions-of-messages)\n- [Building In-Video Search at Netflix](https://netflixtechblog.com/building-in-video-search-936766f0017c)\n- [How Canva scaled Media uploads from Zero to 50 Million per Day](https://www.canva.dev/blog/engineering/from-zero-to-50-million-uploads-per-day-scaling-media-at-canva/)\n- [How Airbnb avoids double payments in a Distributed Payments System](https://medium.com/airbnb-engineering/avoiding-double-payments-in-a-distributed-payments-system-2981f6b070bb)\n- [Stripe’s payments APIs - The first 10 years](https://stripe.com/blog/payment-api-design)\n- [Real time messaging at Slack](https://slack.engineering/real-time-messaging/)\n\n## 🗞️ Must-Read Distributed Systems Papers\n- [Paxos: The Part-Time Parliament](https://lamport.azurewebsites.net/pubs/lamport-paxos.pdf)\n- [MapReduce: Simplified Data Processing on Large Clusters](https://research.google.com/archive/mapreduce-osdi04.pdf)\n- [The Google File System](https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf)\n- [Dynamo: Amazon’s Highly Available Key-value Store](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf)\n- [Kafka: a Distributed Messaging System for Log Processing](https://notes.stephenholiday.com/Kafka.pdf)\n- [Spanner: Google’s Globally-Distributed Database](https://static.googleusercontent.com/media/research.google.com/en//archive/spanner-osdi2012.pdf)\n- [Bigtable: A Distributed Storage System for Structured Data](https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf)\n- [ZooKeeper: Wait-free coordination for Internet-scale systems](https://www.usenix.org/legacy/event/usenix10/tech/full_papers/Hunt.pdf)\n- [The Log-Structured Merge-Tree (LSM-Tree)](https://www.cs.umb.edu/~poneil/lsmtree.pdf)\n- [The Chubby lock service for loosely-coupled distributed systems](https://static.googleusercontent.com/media/research.google.com/en//archive/chubby-osdi06.pdf)\n\n---\n\n<p align=\"center\">\n  <i>If you find this resource helpful, please give it a star ⭐️ and share it with others!</i>\n</p>\n",
+  "images": [],
+  "category": "system-design",
+  "ai_description": "Curated free resources for system design interviews.",
+  "ui_mods_score": 28.558,
+  "stencil_patterns": [
+    {
+      "name": "Resource Curator Pattern",
+      "description": "Awesome list structure for aggregating free learning resources.",
+      "code_snippet": "Use Markdown links to organize: ## Books\n- [Grokking...](url)",
+      "framework": "documentation"
+    }
+  ],
+  "tweaked_variants": [],
+  "processing_status": "enriched",
+  "github_url": "https://github.com/ashishps1/awesome-system-design-resources",
+  "last_enriched": "2025-10-07"
+}

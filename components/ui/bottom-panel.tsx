@@ -22,9 +22,9 @@ export function BottomPanel({ onClose }: BottomPanelProps) {
   ];
 
   return (
-    <div className="h-full flex flex-col bg-black/60 backdrop-blur-sm border-t border-l border-white/10 rounded-tl-xl">
+    <div className="h-full flex flex-col bg-black/60 backdrop-blur-sm border-l border-white/10">
       {/* Tab Bar */}
-      <div className="flex items-center justify-between bg-white/[0.02] border-b border-white/10 rounded-tl-xl">
+      <div className="flex items-center justify-between bg-white/[0.02] border-b border-white/10">
         <div className="flex items-center">
           {tabs.map((tab) => {
             const Icon = tab.icon;

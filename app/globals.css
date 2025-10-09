@@ -119,7 +119,4 @@
   html {
     zoom: 0.75;
   }
-  body {
-    @apply text-foreground;
-  }
 }

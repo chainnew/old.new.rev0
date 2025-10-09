@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# large files
+*.zip
+*.db
+*.db-shm
+*.db-wal
+__pycache__/
+*.pyc
+*.log

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CheckCircle2,
   Circle,
@@ -146,17 +146,66 @@ const initialTasks: Task[] = [
   },
 ];
 
-export default function Plan() {
+interface PlanProps {
+  swarmId?: string;
+  enablePolling?: boolean;
+  pollingInterval?: number;
+}
+
+export default function Plan({ 
+  swarmId, 
+  enablePolling = true, 
+  pollingInterval = 3000 
+}: PlanProps = {}) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [expandedTasks, setExpandedTasks] = useState<string[]>(["1"]);
   const [expandedSubtasks, setExpandedSubtasks] = useState<{
     [key: string]: boolean;
   }>({});
+  const [loading, setLoading] = useState<boolean>(!!swarmId);
+  const [error, setError] = useState<string | null>(null);
   
   const prefersReducedMotion = 
     typeof window !== 'undefined' 
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
       : false;
+
+  // Fetch planner data from API
+  const fetchPlannerData = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/planner/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch planner data');
+      const data = await response.json();
+      setTasks(data.tasks || initialTasks);
+      setError(null);
+    } catch (err) {
+      console.error('Planner fetch error:', err);
+      setError('Failed to load planner data');
+      setTasks(initialTasks); // Fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch and polling
+  useEffect(() => {
+    if (!swarmId) {
+      setLoading(false);
+      return;
+    }
+
+    // Initial fetch
+    fetchPlannerData(swarmId);
+
+    // Setup polling if enabled
+    if (enablePolling) {
+      const interval = setInterval(() => {
+        fetchPlannerData(swarmId);
+      }, pollingInterval);
+
+      return () => clearInterval(interval);
+    }
+  }, [swarmId, enablePolling, pollingInterval]);
 
   const toggleTaskExpansion = (taskId: string) => {
     setExpandedTasks((prev) =>
@@ -307,8 +356,21 @@ export default function Plan() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="bg-black text-white h-full min-h-screen overflow-auto p-3">
+        <div className="flex items-center justify-center h-full min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500 mx-auto mb-3"></div>
+            <p className="text-white/50 text-sm">Loading planner from swarm...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-black/40 backdrop-blur-sm text-white h-full overflow-auto p-3 rounded-xl border border-white/10">
+    <div className="bg-black text-white h-full min-h-screen overflow-auto p-3">
       <motion.div 
         className="bg-white/[0.02] border-white/10 rounded-lg border shadow-xl overflow-hidden"
         initial={{ opacity: 0, y: 10 }}
@@ -323,7 +385,15 @@ export default function Plan() {
       >
         <LayoutGroup>
           <div className="p-3 overflow-hidden">
-            <h2 className="text-sm font-semibold text-white/90 mb-3 px-1">Agent Planner</h2>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-sm font-semibold text-white/90">Agent Planner</h2>
+              {swarmId && (
+                <span className="text-[10px] text-white/40 font-mono">{swarmId.slice(0, 8)}</span>
+              )}
+              {error && (
+                <span className="text-[10px] text-red-400">⚠️ {error}</span>
+              )}
+            </div>
             <ul className="space-y-1 overflow-hidden">
               {tasks.map((task, index) => {
                 const isExpanded = expandedTasks.includes(task.id);
@@ -439,13 +509,14 @@ export default function Plan() {
                         >
                           <div className="absolute top-0 bottom-0 left-[16px] border-l-2 border-dashed border-white/20" />
                           <ul className="mt-1 mr-2 mb-1.5 ml-2 space-y-0.5">
-                            {task.subtasks.map((subtask) => {
-                              const subtaskKey = `${task.id}-${subtask.id}`;
+                            {task.subtasks.map((subtask, subtaskIdx) => {
+                              const subtaskId = subtask.id || `subtask-${subtaskIdx}`;
+                              const subtaskKey = `${task.id}-${subtaskId}`;
                               const isSubtaskExpanded = expandedSubtasks[subtaskKey];
 
                               return (
                                 <motion.li
-                                  key={subtask.id}
+                                  key={subtaskKey}
                                   className="group flex flex-col py-0.5 pl-5"
                                   onClick={() =>
                                     toggleSubtaskExpansion(task.id, subtask.id)
@@ -491,23 +562,23 @@ export default function Plan() {
                                     </motion.div>
 
                                     <span
-                                      className={`cursor-pointer text-xs ${subtask.status === "completed" ? "text-white/40 line-through" : "text-white/70"}`}
+                                      className={`cursor-pointer text-xs ${subtask.status === "completed" ? "text-white/40 line-through" : "text-white"}`}
                                     >
-                                      {subtask.title}
+                                      {subtask.title || subtask.task}
                                     </span>
                                   </motion.div>
 
                                   <AnimatePresence mode="wait">
                                     {isSubtaskExpanded && (
                                       <motion.div 
-                                        className="text-white/60 border-white/20 mt-1 ml-1.5 border-l border-dashed pl-4 text-[11px] overflow-hidden"
+                                        className="text-white/80 border-white/20 mt-1 ml-1.5 border-l border-dashed pl-4 text-[11px] overflow-hidden"
                                         variants={subtaskDetailsVariants}
                                         initial="hidden"
                                         animate="visible"
                                         exit="hidden"
                                         layout
                                       >
-                                        <p className="py-1">{subtask.description}</p>
+                                        <p className="py-1">{subtask.description || subtask.task}</p>
                                         {subtask.tools && subtask.tools.length > 0 && (
                                           <div className="mt-0.5 mb-1 flex flex-wrap items-center gap-1.5">
                                             <span className="text-white/50 font-medium text-[10px]">
