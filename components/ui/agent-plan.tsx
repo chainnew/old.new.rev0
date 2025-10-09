@@ -7,6 +7,7 @@ import {
   CircleAlert,
   CircleDotDashed,
   CircleX,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
@@ -275,6 +276,45 @@ export default function Plan({
     );
   };
 
+  const clearAllTasks = async () => {
+    if (!swarmId) {
+      // Clear local state only
+      setTasks((prev) => prev.map(task => ({
+        ...task,
+        subtasks: [],
+        status: "pending"
+      })));
+      return;
+    }
+
+    // Call backend to clear tasks
+    try {
+      const response = await fetch(`http://localhost:8000/api/planner/${swarmId}/clear`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        // Refresh from backend
+        await fetchPlannerData(swarmId);
+      } else {
+        // Fallback to local clear
+        setTasks((prev) => prev.map(task => ({
+          ...task,
+          subtasks: [],
+          status: "pending"
+        })));
+      }
+    } catch (err) {
+      console.error('Clear tasks error:', err);
+      // Fallback to local clear
+      setTasks((prev) => prev.map(task => ({
+        ...task,
+        subtasks: [],
+        status: "pending"
+      })));
+    }
+  };
+
   const taskVariants = {
     hidden: { 
       opacity: 0, 
@@ -387,12 +427,22 @@ export default function Plan({
           <div className="p-3 overflow-hidden">
             <div className="flex items-center justify-between mb-3 px-1">
               <h2 className="text-sm font-semibold text-white/90">Agent Planner</h2>
-              {swarmId && (
-                <span className="text-[10px] text-white/40 font-mono">{swarmId.slice(0, 8)}</span>
-              )}
-              {error && (
-                <span className="text-[10px] text-red-400">⚠️ {error}</span>
-              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={clearAllTasks}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors border border-red-500/20 hover:border-red-500/40"
+                  title="Clear all tasks (keeps headers)"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Clear Tasks
+                </button>
+                {swarmId && (
+                  <span className="text-[10px] text-white/40 font-mono">{swarmId.slice(0, 8)}</span>
+                )}
+                {error && (
+                  <span className="text-[10px] text-red-400">⚠️ {error}</span>
+                )}
+              </div>
             </div>
             <ul className="space-y-1 overflow-hidden">
               {tasks.map((task, index) => {

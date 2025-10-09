@@ -335,6 +335,40 @@ async def get_planner_tasks(swarm_id: str):
     except Exception as e:
         return {"swarm_id": swarm_id, "tasks": [], "error": str(e)}
 
+@app.post("/api/planner/{swarm_id}/clear")
+async def clear_planner_tasks(swarm_id: str):
+    """Clear all subtasks but keep main task headers (Research, Design, Implementation)"""
+    if not orchestrator:
+        raise HTTPException(500, "Orchestrator not initialized")
+    try:
+        # Clear agent states in database (remove subtasks)
+        import sqlite3
+        conn = sqlite3.connect('swarms/active_swarm.db', check_same_thread=False)
+        cursor = conn.cursor()
+        
+        # Get all agents for this swarm
+        cursor.execute("SELECT id FROM agents WHERE swarm_id = ?", (swarm_id,))
+        agents = cursor.fetchall()
+        
+        # Clear subtasks from each agent's state
+        for (agent_id,) in agents:
+            cursor.execute("""
+                UPDATE agents 
+                SET state = json_set(state, '$.data.subtasks', json('[]'))
+                WHERE id = ? AND swarm_id = ?
+            """, (agent_id, swarm_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return {
+            "swarm_id": swarm_id,
+            "status": "cleared",
+            "message": f"Cleared {len(agents)} agents' subtasks"
+        }
+    except Exception as e:
+        return {"swarm_id": swarm_id, "status": "error", "error": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     
