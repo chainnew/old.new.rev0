@@ -55,28 +55,29 @@ app.add_middleware(
 # Include routers
 app.include_router(eterna_router)
 
-# Initialize agents
-primary_agent = PrimaryAgent()
-code_agent = CodeAgent()
-eterna_port_agent = EternaPortAgent()
+# Initialize specialized agents (diverse skillsets)
+frontend_agent = PrimaryAgent()  # Will rename to FrontendArchitect
+backend_agent = CodeAgent()       # Will rename to BackendIntegrator
+deployment_agent = EternaPortAgent()  # Will rename to DeploymentGuardian
 
 # Initialize swarm coordinator
 coordinator = get_coordinator()
 
-# Agent registry
+# Agent registry - NEW NAMES
 AGENTS = {
-    'code': code_agent,
-    'port': eterna_port_agent,
-    'eterna_port': eterna_port_agent,
-    # Add more agents here as you build them:
-    # 'debug': DebugAgent(),
-    # 'research': ResearchAgent(),
+    'frontend_architect': frontend_agent,     # Design + Implementation (UI/UX)
+    'backend_integrator': backend_agent,      # Implementation + Integration (APIs/DB)
+    'deployment_guardian': deployment_agent,  # Testing + Deployment (CI/CD)
+    # Legacy aliases for compatibility
+    'primary': frontend_agent,
+    'code': backend_agent,
+    'eterna_port': deployment_agent,
 }
 
-# Register agents with coordinator
-coordinator.register_agent('primary')
-coordinator.register_agent('code')
-coordinator.register_agent('eterna_port')
+# Register agents with coordinator (new names)
+coordinator.register_agent('frontend_architect')
+coordinator.register_agent('backend_integrator')
+coordinator.register_agent('deployment_guardian')
 
 
 class SwarmRequest(BaseModel):

@@ -6,11 +6,14 @@ const MAX_CONTEXT_LENGTH = 1000000; // 1M tokens context window
 const ORCHESTRATOR_URL = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || "http://localhost:8000";
 
 // API Keys from environment
-const API_KEYS = [
-  process.env.OPENROUTER_API_KEY1,
-  process.env.OPENROUTER_API_KEY2,
-  process.env.OPENROUTER_API_KEY3,
-].filter(Boolean);
+// Key 4 = Orchestrator (grok-orc) - user-facing chat
+// Keys 1-3 = Specialized agents (Frontend/Backend/Deployment)
+const API_KEYS = {
+  orchestrator: process.env.OPENROUTER_API_KEY4, // grok-orc
+  frontend: process.env.OPENROUTER_API_KEY1,     // Frontend Architect
+  backend: process.env.OPENROUTER_API_KEY2,      // Backend Integrator
+  deployment: process.env.OPENROUTER_API_KEY3,   // Deployment Guardian
+};
 
 interface Message {
   role: "system" | "user" | "assistant";
@@ -62,22 +65,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    if (API_KEYS.length === 0) {
+    if (!API_KEYS.orchestrator) {
       return NextResponse.json(
-        { error: "No API keys configured" },
+        { error: "Orchestrator API key (OPENROUTER_API_KEY4) not configured" },
         { status: 500 }
       );
     }
 
-    // Only Key #1 is the orchestrator that responds to the user
-    const orchestratorKey = API_KEYS[0];
-
-    if (!orchestratorKey) {
-      return NextResponse.json(
-        { error: "Orchestrator API key not configured" },
-        { status: 500 }
-      );
-    }
+    // Use grok-orc (Key #4) for user-facing orchestrator
+    const orchestratorKey = API_KEYS.orchestrator;
 
     // Get or create cached conversation context
     const cacheKey = conversationId || "default";

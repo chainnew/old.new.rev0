@@ -213,8 +213,31 @@ Return ONLY valid JSON, no markdown code blocks."""
         status = self.db.get_swarm_status(swarm_id)
         agents = status['agents']
         
-        # Define task templates aligned with agent roles
+        # Define task templates aligned with agent roles (NEW + LEGACY)
         task_templates = {
+            # New specialized agent roles
+            'frontend_architect': {
+                'title': 'Frontend Architecture & Implementation',
+                'description': 'Design UI/UX wireframes and implement Next.js components with Shadcn/TanStack',
+                'priority': 'high',
+                'level': 0,
+                'dependencies': []
+            },
+            'backend_integrator': {
+                'title': 'Backend Integration & APIs',
+                'description': 'Design database schema, implement APIs, and integrate Stripe/Redis/queues',
+                'priority': 'high',
+                'level': 0,
+                'dependencies': []
+            },
+            'deployment_guardian': {
+                'title': 'Testing & Deployment',
+                'description': 'Setup CI/CD, run E2E tests, and deploy to Vercel/Railway',
+                'priority': 'medium',
+                'level': 1,
+                'dependencies': ['1', '2']  # Depends on frontend and backend
+            },
+            # Legacy roles for backwards compatibility
             'research': {
                 'title': 'Research Project Requirements',
                 'description': 'Gather information about project scope, competitors, and market',
@@ -234,7 +257,7 @@ Return ONLY valid JSON, no markdown code blocks."""
                 'description': 'Plan resource allocation, timeline, and execution strategy',
                 'priority': 'medium',
                 'level': 1,
-                'dependencies': ['1', '2']  # Depends on research and design
+                'dependencies': ['1', '2']
             }
         }
         

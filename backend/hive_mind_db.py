@@ -24,13 +24,20 @@ class SwarmSchema(BaseModel):
 class AgentSchema(BaseModel):
     id: str
     swarm_id: str
-    role: str  # 'research', 'design', 'implementation', 'test', 'deploy', 'quality'
+    role: str  # New: 'frontend_architect', 'backend_integrator', 'deployment_guardian' | Legacy: 'research', 'design', 'implementation'
     state: Dict[str, Any] = {}  # e.g., {'status': 'executing', 'data': {'outputs': [...]}}
     assigned_at: datetime
 
     @validator('role')
     def validate_role(cls, v):
-        valid = ['research', 'design', 'implementation', 'test', 'deploy', 'quality']
+        # Updated roles: 3 specialized agents with diverse skillsets
+        valid = [
+            'frontend_architect',    # Design + Implementation (UI/UX)
+            'backend_integrator',    # Implementation + Integration (APIs/DB)
+            'deployment_guardian',   # Testing + Deployment (CI/CD)
+            # Legacy support for old swarms
+            'research', 'design', 'implementation', 'test', 'deploy', 'quality'
+        ]
         if v not in valid:
             raise ValueError(f'Role must be one of {valid}')
         return v
@@ -183,11 +190,17 @@ class HiveMindDB:
             json.dumps({'progress': 0, 'scope': validated_scope['metadata'], 'learned': {}})
         ))
 
-        # Assign agents (roles tailored for 1-2h MVP; e.g., 5 agents)
-        roles = ['research', 'design', 'implementation', 'test', 'deploy'][:num_agents]
+        # Assign agents (NEW: 3 specialized diverse agents; LEGACY: 5 traditional roles)
+        if num_agents == 3:
+            # New swarm structure: 3 diverse agents with combined skillsets
+            roles = ['frontend_architect', 'backend_integrator', 'deployment_guardian']
+        else:
+            # Legacy 5-agent structure for compatibility
+            roles = ['research', 'design', 'implementation', 'test', 'deploy'][:num_agents]
+        
         agent_ids = []
         for i, role in enumerate(roles):
-            agent_id = f"agent-{role}-{str(uuid.uuid4())[:8]}"
+            agent_id = f"agent-{role.replace('_', '-')}-{str(uuid.uuid4())[:8]}"
             agent_ids.append((agent_id, role))
             agent_state = {'status': 'idle', 'data': {'role_inputs': []}}
             self.cursor.execute("""
