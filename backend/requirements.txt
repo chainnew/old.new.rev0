@@ -42,3 +42,11 @@ types-psycopg2==2.9.21  # Type stubs for mypy
 
 # Subprocess & Build Integration
 subprocess32==3.5.4; python_version < '3.0'  # Backport for older Python
+
+# OpenTelemetry - Distributed Tracing & Metrics (Phase 1B)
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-exporter-otlp==1.22.0
+opentelemetry-instrumentation-fastapi==0.43b0
+opentelemetry-instrumentation-logging==0.43b0
+opentelemetry-instrumentation-requests==0.43b0  # Trace MCP tool calls

@@ -1,6 +1,8 @@
 """
 FastAPI endpoint for Hive-Mind Swarm integration.
 Connects the SQLite swarm database with the TypeScript frontend.
+
+Phase 1B: Now with OpenTelemetry distributed tracing for synergy visibility
 """
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +13,7 @@ import json
 from hive_mind_db import HiveMindDB
 from orchestrator_agent import OrchestratorAgent
 from security.auth_middleware import verify_api_key, APIKeyAuth
+from telemetry import init_telemetry, get_tracer
 import os
 from dotenv import load_dotenv
 
@@ -20,9 +23,12 @@ load_dotenv(dotenv_path="backend/.env.keys")
 
 app = FastAPI(
     title="Hive-Mind Swarm API",
-    version="1.0.0",
-    description="Secured AI Swarm Orchestration API"
+    version="1.1.1",
+    description="Secured AI Swarm Orchestration API with OTel Tracing"
 )
+
+# Initialize OpenTelemetry (auto-instruments FastAPI endpoints)
+tracer, meter = init_telemetry(app)
 
 # Global Orchestrator instance
 orchestrator = OrchestratorAgent()
@@ -235,12 +241,28 @@ def update_swarm(swarm_id: str, status: str):
 def process_user_message(msg: UserMessage):
     """
     Main Orchestrator endpoint: User message → Scope → Swarm → Planner
+    Phase 1B: Traced for end-to-end orchestration visibility
     """
-    try:
-        result = orchestrator.handle_user_input(msg.message, msg.user_id)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    with tracer.start_as_current_span("orchestrator.process_message") as span:
+        span.set_attribute("user.id", msg.user_id)
+        span.set_attribute("message.length", len(msg.message))
+
+        try:
+            result = orchestrator.handle_user_input(msg.message, msg.user_id)
+
+            # Tag span with result metadata
+            if result.get('swarm_id'):
+                span.set_attribute("swarm.id", result['swarm_id'])
+                span.set_attribute("swarm.status", result.get('status', 'unknown'))
+                if 'plan' in result:
+                    span.set_attribute("plan.num_agents", result['plan'].get('num_agents', 0))
+                    span.set_attribute("plan.total_tasks", result['plan'].get('total_tasks', 0))
+
+            return result
+        except Exception as e:
+            span.record_exception(e)
+            span.set_attribute("error", True)
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/planner/{swarm_id}")
 def get_planner_tasks(swarm_id: str):
