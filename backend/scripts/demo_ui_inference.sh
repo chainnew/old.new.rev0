@@ -75,7 +75,12 @@ async def run():
     print()
     print('📊 Results:')
     print(f'   Stack: {result[\"plan\"][\"stack_backend\"]} + {result[\"plan\"][\"stack_frontend\"]}')
-    print(f'   Confidence: {result[\"plan\"][\"stack_confidence\"]:.2f}')
+    stack_conf = result['plan']['stack_confidence']
+    print(f'   Confidence: {stack_conf:.2f}', end='')
+    if stack_conf < 0.7:
+        print(' ⚠️  LOW CONFIDENCE - Stack may need manual review')
+    else:
+        print(' ✅')
     print()
     print('🎨 UI Inference Results:')
     ui = result['ui']
@@ -84,7 +89,11 @@ async def run():
         print(f'      {i}. {comp}')
     print(f'   Responsive: {ui[\"constraints\"].get(\"responsive\", False)}')
     print(f'   WCAG: {ui[\"constraints\"].get(\"wcag\", \"N/A\")}')
-    print(f'   Needs Review: {ui[\"needs_review\"]}')
+    print(f'   Needs Review: {ui[\"needs_review\"]}', end='')
+    if ui['needs_review']:
+        print(' ⚠️  UI generation had low confidence - manual review recommended')
+    else:
+        print(' ✅')
     print()
 
 asyncio.run(run())
@@ -120,7 +129,12 @@ async def run():
     print()
     print('📊 Results:')
     print(f'   Stack: {result[\"plan\"][\"stack_backend\"]} + {result[\"plan\"][\"stack_frontend\"]}')
-    print(f'   Confidence: {result[\"plan\"][\"stack_confidence\"]:.2f}')
+    stack_conf = result['plan']['stack_confidence']
+    print(f'   Confidence: {stack_conf:.2f}', end='')
+    if stack_conf < 0.7:
+        print(' ⚠️  LOW CONFIDENCE - Stack may need manual review')
+    else:
+        print(' ✅')
     print()
     print('🎨 UI Inference Results:')
     ui = result['ui']
@@ -130,7 +144,11 @@ async def run():
     print(f'   Hooks: {len(ui.get(\"hooks\", []))} API hooks')
     for i, hook in enumerate(ui.get('hooks', [])[:3], 1):
         print(f'      {i}. {hook}')
-    print(f'   Needs Review: {ui[\"needs_review\"]}')
+    print(f'   Needs Review: {ui[\"needs_review\"]}', end='')
+    if ui['needs_review']:
+        print(' ⚠️  UI generation had low confidence - manual review recommended')
+    else:
+        print(' ✅')
     print()
 
 asyncio.run(run())
@@ -166,7 +184,12 @@ async def run():
     print()
     print('📊 Results:')
     print(f'   Stack: {result[\"plan\"][\"stack_backend\"]} + {result[\"plan\"][\"stack_frontend\"]}')
-    print(f'   Confidence: {result[\"plan\"][\"stack_confidence\"]:.2f}')
+    stack_conf = result['plan']['stack_confidence']
+    print(f'   Confidence: {stack_conf:.2f}', end='')
+    if stack_conf < 0.7:
+        print(' ⚠️  LOW CONFIDENCE - Stack may need manual review')
+    else:
+        print(' ✅')
     print()
     print('🎨 UI Inference Results:')
     ui = result['ui']
@@ -175,7 +198,11 @@ async def run():
         print(f'      {i}. {comp}')
     print(f'   Theme: {ui[\"constraints\"].get(\"theme\", \"N/A\")}')
     print(f'   Stack Hint: {ui.get(\"stack_hint\", {}).get(\"frontend\", \"N/A\")} (passed to Frontend Agent)')
-    print(f'   Needs Review: {ui[\"needs_review\"]}')
+    print(f'   Needs Review: {ui[\"needs_review\"]}', end='')
+    if ui['needs_review']:
+        print(' ⚠️  UI generation had low confidence - manual review recommended')
+    else:
+        print(' ✅')
     print()
 
 asyncio.run(run())
