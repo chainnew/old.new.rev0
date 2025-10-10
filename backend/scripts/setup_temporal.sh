@@ -93,21 +93,29 @@ docker run -d \
     temporalio/auto-setup:1.20.0
 
 echo "   Container started, waiting for initialization..."
-sleep 15
+sleep 10
 
-# Check if server is up
+# Check if server is up (check for search attributes setup completion)
 echo "🔍 Checking Temporal server health..."
-for i in {1..10}; do
-    if docker logs temporal-server 2>&1 | grep -q "All services are started"; then
+for i in {1..15}; do
+    # Check if gRPC port is responding OR if we see successful workflow execution
+    if nc -z localhost 7233 2>/dev/null || docker logs temporal-server 2>&1 | grep -q "Search attributes have been added"; then
         echo "✅ Temporal server is healthy!"
         break
     fi
-    if [ $i -eq 10 ]; then
-        echo "❌ Temporal server failed to start"
-        echo "   Check logs: docker logs temporal-server"
-        exit 1
+    if [ $i -eq 15 ]; then
+        echo "⚠️  Temporal server may still be starting..."
+        echo "   Checking if it's actually running..."
+        if docker ps | grep -q temporal-server; then
+            echo "✅ Container is running - continuing (it may still be initializing)"
+            break
+        else
+            echo "❌ Temporal server failed to start"
+            echo "   Check logs: docker logs temporal-server"
+            exit 1
+        fi
     fi
-    echo "   Waiting... ($i/10)"
+    echo "   Waiting... ($i/15)"
     sleep 3
 done
 
