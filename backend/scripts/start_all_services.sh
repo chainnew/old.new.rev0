@@ -4,6 +4,7 @@
 # ========================================
 # Starts:
 # - Orchestration Monitor (background)
+# - Temporal Worker (background) - Phase 2B
 # - Swarm API with OTel tracing (foreground)
 #
 # Run: bash backend/scripts/start_all_services.sh
@@ -29,7 +30,21 @@ echo $MONITOR_PID > backend/.monitor.pid
 echo "   PID: $MONITOR_PID (log: backend/logs/monitor.log)"
 echo ""
 
-# Give monitor time to start
+# Start Temporal worker in background (Phase 2B)
+echo "⚡ Starting Temporal Worker (background)..."
+if docker ps | grep -q temporal-server; then
+    nohup python backend/workflows/build_project_workflow.py > backend/logs/temporal_worker.log 2>&1 &
+    WORKER_PID=$!
+    echo $WORKER_PID > backend/.worker.pid
+    echo "   PID: $WORKER_PID (log: backend/logs/temporal_worker.log)"
+    echo "   ✅ Temporal workflows enabled"
+else
+    echo "   ⚠️  Temporal server not running (workflows disabled)"
+    echo "   To enable: bash backend/scripts/setup_temporal.sh"
+fi
+echo ""
+
+# Give services time to start
 sleep 2
 
 # Start swarm API (foreground with OTel traces)
@@ -45,7 +60,19 @@ echo ""
 mkdir -p backend/logs
 
 # Trap to cleanup on exit
-trap "echo ''; echo '🛑 Stopping services...'; kill $MONITOR_PID 2>/dev/null; rm backend/.monitor.pid; echo '✅ All services stopped'; exit" INT TERM
+cleanup() {
+    echo ''
+    echo '🛑 Stopping services...'
+    kill $MONITOR_PID 2>/dev/null
+    if [ -f backend/.worker.pid ]; then
+        kill $(cat backend/.worker.pid) 2>/dev/null
+        rm backend/.worker.pid
+    fi
+    rm backend/.monitor.pid 2>/dev/null
+    echo '✅ All services stopped'
+    exit
+}
+trap cleanup INT TERM
 
 # Start API (foreground - you'll see OTel traces here)
 python backend/swarm_api.py
