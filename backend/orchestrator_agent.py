@@ -18,9 +18,20 @@ from agents.dynamic_planner import get_dynamic_planner
 from agents.escalation_manager import get_escalation_manager
 from agents.context_memory import get_context_memory
 from agents.project_workspace import get_workspace_manager
+from telemetry import get_tracer
 from dotenv import load_dotenv
+import sys
+import os
 
 load_dotenv()
+
+# Import stack inferencer (Phase 2A integration)
+try:
+    from analyzers.stack_inferencer import infer_stack
+    STACK_INFERENCE_AVAILABLE = True
+except ImportError:
+    print("⚠️ Stack inferencer not available - using fallback stacks")
+    STACK_INFERENCE_AVAILABLE = False
 
 class OrchestratorAgent:
     def __init__(self):
@@ -30,6 +41,9 @@ class OrchestratorAgent:
         # Core systems (conflict resolution + scheduling)
         self.conflict_resolver = get_conflict_resolver()
         self.scheduler = create_scheduler(self.db)
+
+        # Telemetry (Phase 2A)
+        self.tracer = get_tracer()
 
         # NEW: Intelligence amplification systems
         self.retry_manager = get_retry_manager()
@@ -195,8 +209,14 @@ Keep it conversational and helpful."""
         return response.choices[0].message.content
     
     def _extract_scope(self, message: str) -> Dict[str, Any]:
-        """Extract structured scope from user message using Grok-4-Fast-Reasoning."""
-        prompt = f"""You are Grok-4-Fast-Reasoning, an expert AI for full-stack development scoping.
+        """
+        Extract structured scope from user message using Grok-4-Fast-Reasoning.
+        Phase 2A: Now integrated with stack inference engine for auto-fill.
+        """
+        with self.tracer.start_as_current_span("extract_scope") as span:
+            span.set_attribute("message.length", len(message))
+
+            prompt = f"""You are Grok-4-Fast-Reasoning, an expert AI for full-stack development scoping.
 
 User Request: "{message}"
 
@@ -246,67 +266,122 @@ User Request: "{message}"
 
 Return ONLY valid JSON, no markdown code blocks."""
 
-        # DEMO MODE: Skip Grok API call for speed, use fast fallback scope generation
-        print(f"📋 Generating scope (using fast demo mode)")
+            # PHASE 2A: Stack Inference Integration
+            # Step 1: Infer technology stack from scope
+            stack_inference = None
+            if STACK_INFERENCE_AVAILABLE:
+                try:
+                    print(f"🔍 Running stack inference on: '{message[:60]}...'")
+                    stack_inference = infer_stack(message)
 
-        # Extract project name from message (simple keyword matching)
-        project_name = "UserProject"
-        if "taskmaster" in message.lower():
-            project_name = "TaskMasterPro"
-        elif "landing" in message.lower() or "website" in message.lower():
-            # Extract name from "for X" pattern
-            words = message.split()
-            for i, word in enumerate(words):
-                if word.lower() in ["for", "called"] and i + 1 < len(words):
-                    project_name = words[i+1].replace('"', '').replace("'", "").strip()
-                    break
+                    span.set_attribute("stack.confidence", stack_inference.get('confidence', 0))
+                    span.set_attribute("stack.backend", stack_inference.get('backend', 'unknown'))
+                    span.set_attribute("stack.template", stack_inference.get('template_title', 'unknown'))
 
-        # NOTE: In production, uncomment this to use Grok AI for scope generation
-        # response = self.client.chat.completions.create(
-        #     model=self.model,
-        #     messages=[{"role": "user", "content": prompt}],
-        #     temperature=0.3,
-        #     max_tokens=2000
-        # )
-        #
-        # try:
-        #     content = response.choices[0].message.content.strip()
-        #     # Clean markdown if present
-        #     if '```json' in content:
-        #         content = content.split('```json')[1].split('```')[0].strip()
-        #     elif '```' in content:
-        #         content = content.split('```')[1].split('```')[0].strip()
-        #
-        #     scope = json.loads(content)
-        #     print(f"\n✅ Scope fleshed: {scope['project']}")
-        #     print(f"   Goal: {scope['goal'][:80]}...")
-        #     print(f"   Features: {len(scope.get('features', []))} items")
-        #     print(f"   Timeline: {scope.get('timeline', 'N/A')}\n")
-        #     return scope
-        # except json.JSONDecodeError as e:
-        #     print(f"⚠️ JSON parse error: {e}")
+                    conf = stack_inference.get('confidence', 0)
+                    if conf >= 0.7:
+                        print(f"✅ Stack inferred: {stack_inference['backend']} + {stack_inference['frontend']}")
+                        print(f"   Confidence: {conf:.2f} | Template: {stack_inference.get('template_title')}")
+                    else:
+                        print(f"⚠️ Low confidence ({conf:.2f}) - using Grok fallback in stack")
 
-        # Fast fallback scope (demo mode)
-        return {
-            "project": project_name,
-            "goal": message,
-            "tech_stack": {
-                "frontend": "Next.js 14 + TS + Tailwind + Shadcn",
-                "backend": "FastAPI",
-                "database": "PostgreSQL"
-            },
-            "features": ["core functionality"],
-            "comps": ["Industry standard"],
-            "timeline": "1-2h",
-            "outcome": "MVP on localhost:3000",
-            "scope_of_works": {
-                "in_scope": ["Research", "Design", "Implementation"],
-                "out_scope": [],
-                "milestones": ["M1: Setup", "M2: MVP", "M3: Deploy"],
-                "risks": [],
-                "kpis": ["Working prototype"]
+                except Exception as e:
+                    print(f"⚠️ Stack inference failed: {e}")
+                    span.set_attribute("stack.error", str(e))
+                    stack_inference = None
+
+            # Extract project name from message (simple keyword matching)
+            project_name = "UserProject"
+            if "taskmaster" in message.lower() or "task" in message.lower():
+                project_name = "TaskMasterPro"
+            elif "landing" in message.lower() or "website" in message.lower():
+                # Extract name from "for X" pattern
+                words = message.split()
+                for i, word in enumerate(words):
+                    if word.lower() in ["for", "called"] and i + 1 < len(words):
+                        project_name = words[i+1].replace('"', '').replace("'", "").strip()
+                        break
+
+            # DEMO MODE: Fast scope generation with stack inference
+            print(f"📋 Generating scope (fast mode with stack inference)")
+
+            # Build tech_stack from inference or use defaults
+            if stack_inference and stack_inference.get('confidence', 0) >= 0.5:
+                tech_stack = {
+                    "frontend": stack_inference.get('frontend', 'Next.js 14 + TS + Tailwind'),
+                    "backend": stack_inference.get('backend', 'FastAPI'),
+                    "database": stack_inference.get('database', 'PostgreSQL'),
+                    "auth": stack_inference.get('auth', 'Clerk/NextAuth'),
+                    "deployment": stack_inference.get('deployment', 'Vercel + Railway')
+                }
+            else:
+                # Fallback defaults
+                tech_stack = {
+                    "frontend": "Next.js 14 + TS + Tailwind + Shadcn",
+                    "backend": "FastAPI",
+                    "database": "PostgreSQL"
+                }
+
+            # NOTE: In production, uncomment this to use Grok AI for full scope generation
+            # response = self.client.chat.completions.create(
+            #     model=self.model,
+            #     messages=[{"role": "user", "content": prompt}],
+            #     temperature=0.3,
+            #     max_tokens=2000
+            # )
+            #
+            # try:
+            #     content = response.choices[0].message.content.strip()
+            #     # Clean markdown if present
+            #     if '```json' in content:
+            #         content = content.split('```json')[1].split('```')[0].strip()
+            #     elif '```' in content:
+            #         content = content.split('```')[1].split('```')[0].strip()
+            #
+            #     scope = json.loads(content)
+            #     # Enrich with stack inference
+            #     if stack_inference:
+            #         scope['stack_inference'] = stack_inference
+            #     return scope
+            # except json.JSONDecodeError as e:
+            #     print(f"⚠️ JSON parse error: {e}")
+
+            # Build enriched scope with stack inference
+            scope = {
+                "project": project_name,
+                "goal": message,
+                "tech_stack": tech_stack,
+                "features": ["core functionality"],
+                "comps": ["Industry standard"],
+                "timeline": "1-2h",
+                "outcome": "MVP on localhost:3000",
+                "scope_of_works": {
+                    "in_scope": ["Research", "Design", "Implementation"],
+                    "out_scope": [],
+                    "milestones": ["M1: Setup", "M2: MVP", "M3: Deploy"],
+                    "risks": [],
+                    "kpis": ["Working prototype"]
+                }
             }
-        }
+
+            # Phase 2A: Add stack inference metadata
+            if stack_inference:
+                scope['stack_inference'] = stack_inference
+                span.set_attribute("stack.inferred", True)
+
+                # Log low confidence for user confirmation gate (Week 3)
+                if stack_inference.get('confidence', 0) < 0.7:
+                    print(f"   📌 Low confidence stack - may need user confirmation")
+            else:
+                span.set_attribute("stack.inferred", False)
+
+            span.set_attribute("scope.project", project_name)
+            print(f"✅ Scope generated: {project_name}")
+            print(f"   Stack: {tech_stack['backend']} + {tech_stack['frontend']}")
+            if stack_inference:
+                print(f"   Inference: {stack_inference.get('rationale', 'N/A')[:80]}...")
+
+            return scope
     
     def _populate_planner_tasks(self, swarm_id: str, scope: Dict[str, Any], plan: Dict[str, Any] = None) -> None:
         """

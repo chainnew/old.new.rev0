@@ -50,3 +50,6 @@ opentelemetry-exporter-otlp==1.22.0
 opentelemetry-instrumentation-fastapi==0.43b0
 opentelemetry-instrumentation-logging==0.43b0
 opentelemetry-instrumentation-requests==0.43b0  # Trace MCP tool calls
+
+# Temporal - Durable Workflow Orchestration (Phase 2B)
+temporalio==1.5.1  # Latest stable with asyncio support
