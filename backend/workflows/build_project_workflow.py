@@ -171,6 +171,78 @@ async def dispatch_task_activity(task_spec: Dict[str, Any], plan: Dict[str, Any]
 
 
 @activity.defn
+async def ui_inference_activity(plan: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Activity: Generate UI-specific plan with stack-aware components.
+
+    Week 3 Phase A: Infers UI design from scope + stack.
+    """
+    with tracer.start_as_current_span("temporal.ui_inference") as span:
+        stack = plan['stack_inference']
+        scope_text = plan['scope'].get('goal', 'Default UI')
+
+        span.set_attribute("ui.frontend", stack.get('frontend', 'unknown'))
+        span.set_attribute("ui.stack_confidence", stack.get('confidence', 0))
+
+        # Import here to avoid circular dependencies
+        from openai import OpenAI
+        import os
+
+        client = OpenAI(
+            api_key=os.getenv('OPENROUTER_API_KEY'),
+            base_url="https://openrouter.ai/api/v1"
+        )
+
+        # Generate UI plan with stack context
+        prompt = f"""Generate a UI component plan for this project:
+
+Scope: {scope_text}
+Frontend Stack: {stack.get('frontend', 'React')}
+Backend Stack: {stack.get('backend', 'FastAPI')}
+Database: {stack.get('database', 'PostgreSQL')}
+
+Output JSON with:
+{{
+  "components": ["ComponentName with description"],
+  "constraints": {{"responsive": true, "wcag": "2.1", "theme": "modern"}},
+  "hooks": ["API hooks for backend integration"],
+  "needs_review": false
+}}
+
+Return ONLY valid JSON."""
+
+        logger.info(f"Inferring UI for: {scope_text[:60]}...")
+
+        response = client.chat.completions.create(
+            model="x-ai/grok-4-fast",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+            max_tokens=800
+        )
+
+        content = response.choices[0].message.content.strip()
+
+        # Clean markdown
+        if '```json' in content:
+            content = content.split('```json')[1].split('```')[0].strip()
+        elif '```' in content:
+            content = content.split('```')[1].split('```')[0].strip()
+
+        import json as json_lib
+        ui_plan = json_lib.loads(content)
+
+        # Enrich with stack context
+        ui_plan['stack_hint'] = stack
+
+        span.set_attribute("ui.components_count", len(ui_plan.get('components', [])))
+        span.set_attribute("ui.needs_review", ui_plan.get('needs_review', False))
+
+        logger.info(f"UI plan generated: {len(ui_plan.get('components', []))} components")
+
+        return ui_plan
+
+
+@activity.defn
 async def test_gate_activity(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Activity: Validate results meet quality gates.
@@ -288,8 +360,25 @@ class BuildProjectWorkflow:
 
             workflow.logger.info(f"   ✅ {len(successful_results)}/{len(task_futures)} tasks completed")
 
-            # Step 3: Test Gate
-            workflow.logger.info("🧪 Step 3: Running test gate...")
+            # Step 3: UI Inference (Week 3 Phase A)
+            workflow.logger.info("🎨 Step 3: Generating UI plan...")
+
+            ui_result = await workflow.execute_activity(
+                ui_inference_activity,
+                args=[plan],
+                start_to_close_timeout=timedelta(seconds=45),
+                retry_policy=workflow.RetryPolicy(
+                    initial_interval=timedelta(seconds=5),
+                    maximum_attempts=2
+                )
+            )
+
+            workflow.logger.info(f"   ✅ UI plan: {len(ui_result.get('components', []))} components")
+            if ui_result.get('needs_review'):
+                workflow.logger.info("   ⚠️ UI needs user review (low confidence)")
+
+            # Step 4: Test Gate
+            workflow.logger.info("🧪 Step 4: Running test gate...")
 
             gate_result = await workflow.execute_activity(
                 test_gate_activity,
@@ -299,7 +388,7 @@ class BuildProjectWorkflow:
 
             workflow.logger.info(f"   ✅ Test gate passed: {gate_result['coverage']:.1f}% coverage")
 
-            # Step 4: Return Results
+            # Step 5: Return Results
             final_result = {
                 "status": "success",
                 "project_id": project_id,
@@ -307,6 +396,13 @@ class BuildProjectWorkflow:
                     "stack_backend": stack_backend,
                     "stack_frontend": plan['stack_inference'].get('frontend', 'unknown'),
                     "stack_confidence": stack_conf
+                },
+                "ui": {
+                    "components": ui_result.get('components', []),
+                    "constraints": ui_result.get('constraints', {}),
+                    "hooks": ui_result.get('hooks', []),
+                    "needs_review": ui_result.get('needs_review', False),
+                    "stack_hint": ui_result.get('stack_hint', {})
                 },
                 "execution": {
                     "tasks_completed": len(successful_results),
@@ -355,6 +451,7 @@ async def run_worker():
         activities=[
             generate_plan_activity,
             dispatch_task_activity,
+            ui_inference_activity,
             test_gate_activity
         ]
     )
