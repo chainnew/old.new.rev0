@@ -466,6 +466,134 @@ async def test_gate_activity(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         }
 
 
+@activity.defn
+async def enforce_slo_activity(plan: Dict[str, Any], execution_results: Dict[str, Any], workflow_start_time: float) -> Dict[str, Any]:
+    """
+    Activity: Enforce SLOs (Service Level Objectives) for Week 4 production readiness.
+
+    SLOs Checked:
+    - Cost per project <$5 (OpenRouter tokens)
+    - E2E latency <12 minutes (p95)
+    - Coverage >=95%
+    - Stack confidence >=0.8
+
+    Args:
+        plan: Generated plan with stack_inference
+        execution_results: Aggregate results (UI, visual, conflicts, test gate)
+        workflow_start_time: Workflow start timestamp (Unix time)
+
+    Returns:
+        SLO compliance result with cost, latency, coverage metrics
+    """
+    with tracer.start_as_current_span("temporal.slo_enforce") as span:
+        import time
+
+        project_id = plan.get('scope', {}).get('project', 'unknown')
+        span.set_attribute("slo.project_id", project_id)
+
+        # SLO 1: Cost Estimation (<$5 per project)
+        # Estimate tokens from activities (STUB: hardcoded for demo)
+        total_tokens = 0
+        total_tokens += plan.get('metrics', {}).get('tokens', 1200)  # Plan generation
+        total_tokens += execution_results.get('ui', {}).get('tokens', 800)  # UI inference
+        total_tokens += execution_results.get('conflicts', {}).get('tokens', 600) if execution_results.get('conflicts', {}).get('detected') else 0
+
+        cost_per_1k = 0.005  # $0.005/1k tokens (OpenRouter avg)
+        estimated_cost = (total_tokens / 1000) * cost_per_1k
+
+        span.set_attribute("slo.tokens_used", total_tokens)
+        span.set_attribute("slo.estimated_cost", estimated_cost)
+
+        if estimated_cost > 5.0:
+            logger.error(f"💰 SLO BREACH: Cost ${estimated_cost:.2f} > $5 threshold")
+            raise ApplicationError(
+                f"Cost overrun: ${estimated_cost:.2f} exceeds $5 SLO",
+                non_retryable=True  # Don't retry cost breaches
+            )
+
+        # SLO 2: E2E Latency (<12 minutes p95)
+        workflow_duration = time.time() - workflow_start_time
+        latency_slo = 720  # 12 minutes in seconds
+
+        span.set_attribute("slo.latency_seconds", workflow_duration)
+        span.set_attribute("slo.latency_threshold", latency_slo)
+
+        if workflow_duration > latency_slo:
+            logger.warning(f"⏱️  SLO WARNING: Latency {workflow_duration:.0f}s > {latency_slo}s threshold")
+            # Don't fail, just warn and log (latency can spike)
+            span.set_attribute("slo.latency_breach", True)
+        else:
+            span.set_attribute("slo.latency_breach", False)
+
+        # SLO 3: Coverage (>=95%)
+        coverage = execution_results.get('test_gate', {}).get('coverage', 0)
+        coverage_slo = 95.0
+
+        span.set_attribute("slo.coverage", coverage)
+        span.set_attribute("slo.coverage_threshold", coverage_slo)
+
+        if coverage < coverage_slo:
+            logger.error(f"📊 SLO BREACH: Coverage {coverage:.1f}% < {coverage_slo}% threshold")
+            # Log intervention (STUB: would create orchestration event)
+            # create_orchestration_event(project_id, "slo_breach", f"Coverage {coverage:.1f}%")
+            raise ApplicationError(
+                f"Coverage SLO failed: {coverage:.1f}% < {coverage_slo}%",
+                non_retryable=False  # Retriable (may pass on retry)
+            )
+
+        # SLO 4: Stack Confidence (>=0.8)
+        stack_confidence = plan.get('stack_inference', {}).get('confidence', 0)
+        confidence_slo = 0.8
+
+        span.set_attribute("slo.stack_confidence", stack_confidence)
+        span.set_attribute("slo.confidence_threshold", confidence_slo)
+
+        if stack_confidence < confidence_slo:
+            logger.warning(f"🎯 SLO WARNING: Stack confidence {stack_confidence:.2f} < {confidence_slo} threshold")
+            # Warn but don't fail (low confidence triggers manual review flag)
+            span.set_attribute("slo.confidence_breach", True)
+        else:
+            span.set_attribute("slo.confidence_breach", False)
+
+        # Aggregate SLO result
+        slo_compliant = (
+            estimated_cost <= 5.0 and
+            coverage >= coverage_slo
+        )
+
+        result = {
+            "compliant": slo_compliant,
+            "cost": {
+                "tokens": total_tokens,
+                "estimated_cost": round(estimated_cost, 2),
+                "threshold": 5.0,
+                "breach": estimated_cost > 5.0
+            },
+            "latency": {
+                "duration_seconds": round(workflow_duration, 1),
+                "threshold_seconds": latency_slo,
+                "breach": workflow_duration > latency_slo
+            },
+            "coverage": {
+                "value": round(coverage, 1),
+                "threshold": coverage_slo,
+                "breach": coverage < coverage_slo
+            },
+            "confidence": {
+                "value": round(stack_confidence, 2),
+                "threshold": confidence_slo,
+                "breach": stack_confidence < confidence_slo
+            }
+        }
+
+        if slo_compliant:
+            logger.info(f"✅ SLO Compliant: Cost=${estimated_cost:.2f}, Coverage={coverage:.1f}%, Latency={workflow_duration:.0f}s")
+        else:
+            logger.error(f"❌ SLO Breach: Check cost/coverage thresholds")
+
+        return result
+
+
 # ============================================================================
 # Workflow Definition
 # ============================================================================
@@ -490,6 +618,9 @@ class BuildProjectWorkflow:
 
     @workflow.run
     async def run(self, scope: str, project_id: str) -> Dict[str, Any]:
+        import time
+        workflow_start_time = time.time()  # Track start time for SLO latency check
+
         workflow.logger.info(f"🚀 Starting BuildProjectWorkflow for {project_id}")
         workflow.logger.info(f"   Scope: {scope[:60]}...")
 
@@ -613,7 +744,33 @@ class BuildProjectWorkflow:
 
             workflow.logger.info(f"   ✅ Test gate passed: {gate_result['coverage']:.1f}% coverage")
 
-            # Step 5: Return Results
+            # Step 5: SLO Enforcement (Week 4 Preview)
+            workflow.logger.info("📊 Step 5: Enforcing SLOs (cost, latency, coverage, confidence)...")
+
+            execution_results = {
+                "ui": ui_result,
+                "visual": visual_result,
+                "conflicts": conflict_result,
+                "test_gate": gate_result
+            }
+
+            slo_result = await workflow.execute_activity(
+                enforce_slo_activity,
+                args=[plan, execution_results, workflow_start_time],
+                start_to_close_timeout=timedelta(seconds=30),
+                retry_policy=workflow.RetryPolicy(
+                    initial_interval=timedelta(seconds=5),
+                    maximum_attempts=1  # Don't retry SLO checks extensively
+                )
+            )
+
+            if slo_result['compliant']:
+                workflow.logger.info(f"   ✅ SLO Compliant: Cost=${slo_result['cost']['estimated_cost']}, " +
+                                   f"Coverage={slo_result['coverage']['value']}%")
+            else:
+                workflow.logger.warning(f"   ⚠️  SLO Breaches Detected - Check cost/coverage")
+
+            # Step 6: Return Results
             final_result = {
                 "status": "success",
                 "project_id": project_id,
@@ -640,6 +797,13 @@ class BuildProjectWorkflow:
                     "detected": conflict_result['resolved'],
                     "similarity": conflict_result['similarity'],
                     "intervention": conflict_result.get('intervention', None)
+                },
+                "slos": {
+                    "compliant": slo_result['compliant'],
+                    "cost": slo_result['cost'],
+                    "latency": slo_result['latency'],
+                    "coverage": slo_result['coverage'],
+                    "confidence": slo_result['confidence']
                 },
                 "execution": {
                     "tasks_completed": len(successful_results),
@@ -691,7 +855,8 @@ async def run_worker():
             ui_inference_activity,
             visual_test_activity,
             resolve_conflicts_activity,
-            test_gate_activity
+            test_gate_activity,
+            enforce_slo_activity
         ]
     )
 
