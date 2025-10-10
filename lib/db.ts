@@ -84,7 +84,7 @@ export async function saveMessage(
       role,
       content,
       tokensUsed,
-      model: model || 'x-ai/grok-code-fast-1',
+      model: model || 'x-ai/grok-4-fast',
       createdAt: new Date(),
     };
     messages.push(newMessage);
@@ -98,7 +98,7 @@ export async function saveMessage(
       role,
       content,
       tokensUsed,
-      model: model || 'x-ai/grok-code-fast-1',
+      model: model || 'x-ai/grok-4-fast',
     },
   });
 }

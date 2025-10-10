@@ -2,7 +2,7 @@
 FastAPI endpoint for Hive-Mind Swarm integration.
 Connects the SQLite swarm database with the TypeScript frontend.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional
@@ -10,9 +10,19 @@ import uvicorn
 import json
 from hive_mind_db import HiveMindDB
 from orchestrator_agent import OrchestratorAgent
+from security.auth_middleware import verify_api_key, APIKeyAuth
 import os
+from dotenv import load_dotenv
 
-app = FastAPI(title="Hive-Mind Swarm API", version="1.0.0")
+# Load environment and API keys
+load_dotenv()
+load_dotenv(dotenv_path="backend/.env.keys")
+
+app = FastAPI(
+    title="Hive-Mind Swarm API",
+    version="1.0.0",
+    description="Secured AI Swarm Orchestration API"
+)
 
 # Global Orchestrator instance
 orchestrator = OrchestratorAgent()
@@ -67,9 +77,12 @@ def root():
         }
     }
 
-@app.post("/swarms")
-def create_swarm(scope: SwarmCreate):
-    """Create a new swarm from initial scope."""
+@app.post("/swarms", dependencies=[Depends(verify_api_key)])
+async def create_swarm(request: Request, scope: SwarmCreate):
+    """
+    Create a new swarm from initial scope.
+    🔐 Requires: SWARM_CREATE_KEY, ADMIN_MASTER_KEY, or API_MASTER_KEY
+    """
     try:
         initial_scope = {
             'project': scope.project,
@@ -350,14 +363,125 @@ async def mcp_schemas_proxy():
     """Get MCP tool schemas for frontend."""
     import requests
     import os
-    
+
     mcp_url = os.getenv('MCP_URL', 'http://localhost:8001')
-    
+
     try:
         response = requests.get(f"{mcp_url}/tools/schemas", timeout=10)
         return response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MCP schema fetch error: {e}")
+
+@app.get("/api/projects/{swarm_id}/files")
+async def list_project_files(swarm_id: str):
+    """List all files in a project directory for the code editor."""
+    import os
+    from pathlib import Path
+
+    # Get swarm details to find project_path
+    cursor = db.cursor
+    cursor.execute("SELECT project_path, name FROM swarms WHERE id = ?", (swarm_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Swarm not found")
+
+    project_path = row[0]
+    if not project_path or not os.path.exists(project_path):
+        return {"files": [], "project_path": None}
+
+    def scan_directory(path: Path, base_path: Path) -> list:
+        """Recursively scan directory and build file tree."""
+        items = []
+        try:
+            for item in sorted(path.iterdir()):
+                # Skip hidden files and node_modules
+                if item.name.startswith('.') or item.name == 'node_modules':
+                    continue
+
+                relative_path = str(item.relative_to(base_path))
+
+                if item.is_dir():
+                    children = scan_directory(item, base_path)
+                    items.append({
+                        'id': relative_path,
+                        'name': item.name,
+                        'type': 'folder',
+                        'path': relative_path,
+                        'children': children
+                    })
+                else:
+                    # Detect language from extension
+                    ext = item.suffix.lower()
+                    lang_map = {
+                        '.tsx': 'typescript', '.ts': 'typescript',
+                        '.jsx': 'javascript', '.js': 'javascript',
+                        '.py': 'python', '.css': 'css',
+                        '.json': 'json', '.md': 'markdown'
+                    }
+
+                    items.append({
+                        'id': relative_path,
+                        'name': item.name,
+                        'type': 'file',
+                        'path': relative_path,
+                        'language': lang_map.get(ext, 'plaintext')
+                    })
+        except PermissionError:
+            pass
+
+        return items
+
+    base = Path(project_path)
+    file_tree = scan_directory(base, base)
+
+    return {
+        "swarm_id": swarm_id,
+        "project_path": project_path,
+        "files": file_tree
+    }
+
+@app.get("/api/projects/{swarm_id}/files/{file_path:path}")
+async def get_file_content(swarm_id: str, file_path: str):
+    """Get content of a specific file."""
+    import os
+    from pathlib import Path
+
+    # Get project path
+    cursor = db.cursor
+    cursor.execute("SELECT project_path FROM swarms WHERE id = ?", (swarm_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Swarm not found")
+
+    project_path = row[0]
+    if not project_path:
+        raise HTTPException(status_code=404, detail="Project path not set")
+
+    # Construct full file path and validate it's inside project
+    full_path = Path(project_path) / file_path
+
+    # Security: Ensure path is within project directory
+    try:
+        full_path = full_path.resolve()
+        if not str(full_path).startswith(str(Path(project_path).resolve())):
+            raise HTTPException(status_code=403, detail="Access denied")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file path")
+
+    if not full_path.exists() or not full_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    try:
+        content = full_path.read_text()
+        return {
+            "file_path": file_path,
+            "content": content,
+            "size": full_path.stat().st_size
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading file: {e}")
 
 if __name__ == "__main__":
     print("🚀 Starting Hive-Mind Swarm API...")

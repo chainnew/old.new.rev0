@@ -195,6 +195,7 @@ export function AnimatedAIChat() {
     const [showCode, setShowCode] = useState(false);
     const [showBottomPanel, setShowBottomPanel] = useState(false);
     const [showPlanningPanel, setShowPlanningPanel] = useState(false);
+    const [activeSwarmId, setActiveSwarmId] = useState<string | null>(null);
     const [codeHeight, setCodeHeight] = useState(55); // percentage of vh
     const [isResizeLocked, setIsResizeLocked] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -484,10 +485,40 @@ export function AnimatedAIChat() {
             }
 
             const data = await response.json();
+
+            // Check if response contains swarm metadata
+            const swarmMetaMatch = data.response.match(/<!-- SWARM_META:([a-f0-9-]+) -->/);
+            if (swarmMetaMatch) {
+                const swarmId = swarmMetaMatch[1];
+                setActiveSwarmId(swarmId);
+                setShowPlanningPanel(true); // Auto-open planner
+                setShowCode(true); // Auto-open code editor
+            }
+
+            // Typing animation: 120 WPM = ~600 characters per minute = ~10 chars/sec
+            const typingSpeed = 1000 / 10; // ~100ms per character
+            const fullResponse = data.response;
+
+            // Add empty message first
             setMessages((prev) => [
                 ...prev,
-                { role: "assistant", content: data.response },
+                { role: "assistant", content: "" },
             ]);
+
+            // Animate typing
+            let currentIndex = 0;
+            const typeInterval = setInterval(() => {
+                currentIndex++;
+                setMessages((prev) => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].content = fullResponse.slice(0, currentIndex);
+                    return newMessages;
+                });
+
+                if (currentIndex >= fullResponse.length) {
+                    clearInterval(typeInterval);
+                }
+            }, typingSpeed);
         } catch (error) {
             console.error("Error:", error);
             setMessages((prev) => [
@@ -974,7 +1005,7 @@ export function AnimatedAIChat() {
                         >
                             <div className="max-h-[calc(100vh-3rem)] overflow-y-auto">
                                 <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-xl shadow-2xl">
-                                    <Plan />
+                                    <Plan swarmId={activeSwarmId} />
                                 </div>
                             </div>
                         </motion.div>
@@ -986,10 +1017,11 @@ export function AnimatedAIChat() {
             {isMounted && (
                 <AnimatePresence>
                     {showCode && (
-                        <motion.div 
-                            className="fixed right-0 top-0 z-[55] shadow-2xl"
-                            style={{ 
-                                height: showBottomPanel ? `${codeHeight}vh` : '100vh',
+                        <motion.div
+                            className="fixed right-0 z-[55] shadow-2xl"
+                            style={{
+                                top: '80px',
+                                height: showBottomPanel ? `calc(${codeHeight}vh - 80px)` : 'calc(100vh - 80px)',
                                 width: `${rightPanelWidth}px`
                             }}
                             initial={{ opacity: 0, y: -600 }}
@@ -1029,7 +1061,7 @@ export function AnimatedAIChat() {
                                     </button>
                                 </div>
                             </div>
-                            <CodeWindow />
+                            <CodeWindow swarmId={activeSwarmId} />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -1039,9 +1071,9 @@ export function AnimatedAIChat() {
             {isMounted && showCode && showBottomPanel && (
                 <motion.div
                     className="fixed right-0 z-[60] flex items-center justify-center"
-                    style={{ 
+                    style={{
                         top: `${codeHeight}vh`,
-                        height: '4px',
+                        height: '1px',
                         width: `${rightPanelWidth}px`,
                         cursor: isResizeLocked ? 'default' : 'ns-resize'
                     }}
@@ -1079,10 +1111,10 @@ export function AnimatedAIChat() {
             {isMounted && (
                 <AnimatePresence>
                     {showBottomPanel && (
-                        <motion.div 
+                        <motion.div
                             className="fixed right-0 z-50 shadow-2xl"
-                            style={{ 
-                                height: showCode ? `${100 - codeHeight}vh` : '45vh',
+                            style={{
+                                height: showCode ? `calc(100vh - ${codeHeight}vh)` : '45vh',
                                 width: `${rightPanelWidth}px`,
                                 bottom: '0px',
                                 top: showCode ? `${codeHeight}vh` : 'auto'

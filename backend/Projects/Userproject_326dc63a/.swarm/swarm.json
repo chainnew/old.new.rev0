@@ -1,0 +1,43 @@
+{
+  "swarm_id": "326dc63a-208d-48aa-93ef-20ff838e5e9c",
+  "created_at": "2025-10-10T09:27:33.878797",
+  "template": "fullstack",
+  "scope": {
+    "project": "UserProject",
+    "goal": "Create a workout tracking app called FitFlow",
+    "tech_stack": {
+      "frontend": "Next.js 14 + TS + Tailwind + Shadcn",
+      "backend": "FastAPI",
+      "database": "PostgreSQL"
+    },
+    "features": [
+      "core functionality"
+    ],
+    "comps": [
+      "Industry standard"
+    ],
+    "timeline": "1-2h",
+    "outcome": "MVP on localhost:3000",
+    "scope_of_works": {
+      "in_scope": [
+        "Research",
+        "Design",
+        "Implementation"
+      ],
+      "out_scope": [],
+      "milestones": [
+        "M1: Setup",
+        "M2: MVP",
+        "M3: Deploy"
+      ],
+      "risks": [],
+      "kpis": [
+        "Working prototype"
+      ]
+    }
+  },
+  "status": "initializing",
+  "agents": [],
+  "files_created": 0,
+  "tasks_completed": 0
+}

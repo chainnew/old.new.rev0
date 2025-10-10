@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional
 import requests
 from openai import OpenAI
 from hive_mind_db import HiveMindDB
+from agents.ui_component_manager import get_ui_component_manager
 import uuid
 import json
 import os
@@ -15,6 +16,9 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Initialize UI Component Manager
+ui_manager = get_ui_component_manager()
 
 # Auth dependency (API key based)
 MCP_API_KEY = os.getenv('MCP_API_KEY', 'mcp-secret-key')
@@ -228,6 +232,35 @@ def communication_tool(message: str, recipient: str = "user", action: str = "not
     
     return actions.get(action, actions["notify"])
 
+def ui_component_tool(query: str, component_type: Optional[str] = None, limit: int = 5) -> Dict[str, Any]:
+    """
+    Search scraped GitHub UI themes database for components.
+    Agents use this to discover pre-built UI components matching requirements.
+
+    Args:
+        query: Component search term (e.g., "button", "navbar", "dashboard", "card")
+        component_type: Optional filter ("react", "vue", "tailwind")
+        limit: Max results to return
+
+    Returns:
+        List of matching UI components with code samples
+    """
+    try:
+        components = ui_manager.search_components(query, component_type, limit)
+
+        return {
+            "query": query,
+            "found": len(components),
+            "components": components[:limit]
+        }
+    except Exception as e:
+        return {
+            "query": query,
+            "found": 0,
+            "components": [],
+            "error": str(e)
+        }
+
 # ============================================================================
 # API Endpoints
 # ============================================================================
@@ -237,13 +270,14 @@ def root():
     return {
         "service": "MCP Servers",
         "version": "1.0",
-        "tools": ["browser", "code-gen", "db-sync", "communication"],
+        "tools": ["browser", "code-gen", "db-sync", "communication", "ui-component"],
         "endpoints": {
             "GET /tools/schemas": "Get OpenAI-compatible tool schemas",
             "POST /tools/browser": "Web research tool",
             "POST /tools/code-gen": "Code generation tool",
             "POST /tools/db-sync": "Database sync tool",
-            "POST /tools/communication": "Communication tool"
+            "POST /tools/communication": "Communication tool",
+            "POST /tools/ui-component": "UI component discovery tool (142 themes)"
         }
     }
 
@@ -350,6 +384,33 @@ async def get_tool_schemas():
                             }
                         },
                         "required": ["message"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "ui_component_tool",
+                    "description": "Search 142 scraped GitHub UI theme repositories for components. Find buttons, navbars, dashboards, cards, forms, etc. Returns code samples and stencil patterns.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Component search term (e.g., 'button', 'navbar', 'dashboard', 'card', 'form', 'modal')"
+                            },
+                            "component_type": {
+                                "type": "string",
+                                "description": "Optional filter: 'react', 'vue', 'tailwind', 'css'",
+                                "default": None
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "description": "Max results (default: 5)",
+                                "default": 5
+                            }
+                        },
+                        "required": ["query"]
                     }
                 }
             }
@@ -507,10 +568,49 @@ async def call_communication(call: ToolCall, _: str = Depends(get_api_key)):
             error=str(e)
         )
 
+@app.post("/tools/ui-component", response_model=ToolResponse)
+async def call_ui_component(call: ToolCall, _: str = Depends(get_api_key)):
+    """Execute UI component search tool."""
+    if call.tool_name != "ui-component":
+        raise HTTPException(400, f"Invalid tool: expected 'ui-component', got '{call.tool_name}'")
+
+    try:
+        output = ui_component_tool(
+            call.args.get("query", ""),
+            call.args.get("component_type"),
+            call.args.get("limit", 5)
+        )
+
+        # Log tool call
+        session_id = str(uuid.uuid4())
+        db.cursor.execute("""
+            INSERT INTO sessions (id, swarm_id, data)
+            VALUES (?, ?, ?)
+        """, (session_id, call.swarm_id, json.dumps({
+            "tool_call": "ui-component",
+            "query": call.args.get("query"),
+            "found": output.get("found", 0),
+            "timestamp": datetime.now().isoformat()
+        })))
+        db.conn.commit()
+
+        return ToolResponse(
+            success=True,
+            output=output,
+            updated_task_id=session_id
+        )
+    except Exception as e:
+        return ToolResponse(
+            success=False,
+            output=None,
+            error=str(e)
+        )
+
 # Run: uvicorn mcp_servers:app --host 0.0.0.0 --port 8001
 if __name__ == "__main__":
     import uvicorn
     print("🔧 Starting MCP Servers on port 8001...")
-    print("📋 Tools: browser, code-gen, db-sync, communication")
+    print("📋 Tools: browser, code-gen, db-sync, communication, ui-component")
+    print("🎨 UI Component Database: 142 GitHub repos loaded")
     print("🔑 API Key required: Bearer {MCP_API_KEY}")
     uvicorn.run(app, host="0.0.0.0", port=8001)

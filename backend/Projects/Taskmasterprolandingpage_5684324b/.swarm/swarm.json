@@ -1,0 +1,67 @@
+{
+  "swarm_id": "5684324b-e2d4-4f33-819c-4663b8fa752d",
+  "created_at": "2025-10-10T08:57:39.094361",
+  "template": "fullstack",
+  "scope": {
+    "project": "TaskMasterProLandingPage",
+    "goal": "Develop a high-converting landing page for TaskMaster Pro, a pro-level task management platform, to showcase its features and drive user sign-ups. It addresses the pain point of overwhelmed professionals juggling multiple tools by clearly communicating streamlined task tracking, team collaboration, and productivity boosts. The page will feature engaging visuals, testimonials, and CTAs to boost awareness and conversions.",
+    "tech_stack": {
+      "frontend": "Next.js 14+ App Router + TypeScript + Tailwind CSS + Shadcn/ui",
+      "backend": "Node.js/Express + TypeScript",
+      "database": "PostgreSQL (Railway)",
+      "auth": "Clerk",
+      "payments": "",
+      "deployment": "Vercel (frontend) + Railway (backend)"
+    },
+    "features": [
+      "Hero section with compelling headline, subheadline, and primary CTA for sign-up/demo request using Shadcn buttons and cards",
+      "Features grid highlighting key benefits like task assignment, real-time collaboration, and analytics dashboards with icons and descriptions",
+      "Testimonials carousel from users to build trust, implemented with HeadlessUI or Shadcn components",
+      "Pricing teaser section with basic/pro tiers and Stripe integration placeholder for future",
+      "Contact form for inquiries using React Hook Form + Zod validation, connected to backend for email notifications",
+      "Footer with navigation links, social proof, and secondary CTA"
+    ],
+    "comps": [
+      "Trello (visually engaging boards / landing page lacks depth in pro features)",
+      "Asana (comprehensive workflows / overwhelming hero section for quick scans)",
+      "Todoist (simple and clean / minimal emphasis on enterprise collaboration)"
+    ],
+    "timeline": "1 day prod",
+    "outcome": "Live repo on localhost:3000 + Vercel URL + 80% test coverage",
+    "scope_of_works": {
+      "in_scope": [
+        "Competitor research and wireframing",
+        "UI design using Tailwind and Shadcn components from database",
+        "Frontend implementation with Next.js",
+        "Basic form handling and deployment"
+      ],
+      "out_scope": [
+        "Full TaskMaster Pro application build",
+        "Advanced backend features like user auth beyond forms",
+        "Native mobile apps or PWA optimization",
+        "Custom illustrations (use stock or free assets)"
+      ],
+      "milestones": [
+        "M1: Research and wireframes completed (2h)",
+        "M2: Design specs and component selection from DB (2h)",
+        "M3: MVP implemented on localhost:3000 (4h)",
+        "M4: Testing, deployment to Vercel, and handover (2h)"
+      ],
+      "risks": [
+        "Component availability gaps (mitigate by querying UI database first, fallback to Shadcn customization)",
+        "Design iteration delays (use pre-built templates from Figma community)",
+        "Integration issues with Clerk (test auth flows early with sandbox)"
+      ],
+      "kpis": [
+        "Page load time <2s",
+        "Lighthouse performance score 90+",
+        "Form submission success rate 100%",
+        "Mobile responsiveness (passes Chrome DevTools audit)"
+      ]
+    }
+  },
+  "status": "initializing",
+  "agents": [],
+  "files_created": 0,
+  "tasks_completed": 0
+}

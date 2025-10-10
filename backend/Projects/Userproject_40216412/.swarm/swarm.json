@@ -1,0 +1,43 @@
+{
+  "swarm_id": "40216412-9d55-42b2-af97-5bc32525e9ec",
+  "created_at": "2025-10-10T09:53:56.211252",
+  "template": "fullstack",
+  "scope": {
+    "project": "UserProject",
+    "goal": "Build a counter app with Next.js",
+    "tech_stack": {
+      "frontend": "Next.js 14 + TS + Tailwind + Shadcn",
+      "backend": "FastAPI",
+      "database": "PostgreSQL"
+    },
+    "features": [
+      "core functionality"
+    ],
+    "comps": [
+      "Industry standard"
+    ],
+    "timeline": "1-2h",
+    "outcome": "MVP on localhost:3000",
+    "scope_of_works": {
+      "in_scope": [
+        "Research",
+        "Design",
+        "Implementation"
+      ],
+      "out_scope": [],
+      "milestones": [
+        "M1: Setup",
+        "M2: MVP",
+        "M3: Deploy"
+      ],
+      "risks": [],
+      "kpis": [
+        "Working prototype"
+      ]
+    }
+  },
+  "status": "initializing",
+  "agents": [],
+  "files_created": 0,
+  "tasks_completed": 0
+}

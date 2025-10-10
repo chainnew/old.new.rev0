@@ -87,7 +87,8 @@ class HiveMindDB:
                 status TEXT NOT NULL DEFAULT 'idle',
                 num_agents INTEGER NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                metadata TEXT  -- JSON stringified
+                metadata TEXT,  -- JSON stringified
+                project_path TEXT  -- Autonomous workspace path: Projects/ProjectName_swarmId/
             )
         """)
 
@@ -190,13 +191,9 @@ class HiveMindDB:
             json.dumps({'progress': 0, 'scope': validated_scope['metadata'], 'learned': {}})
         ))
 
-        # Assign agents (NEW: 3 specialized diverse agents; LEGACY: 5 traditional roles)
-        if num_agents == 3:
-            # New swarm structure: 3 diverse agents with combined skillsets
-            roles = ['frontend_architect', 'backend_integrator', 'deployment_guardian']
-        else:
-            # Legacy 5-agent structure for compatibility
-            roles = ['research', 'design', 'implementation', 'test', 'deploy'][:num_agents]
+        # Assign agents - ALWAYS use specialized 3-agent roles (Frontend Architect, Backend Integrator, Deployment Guardian)
+        # This is the new standard for all swarms
+        roles = ['frontend_architect', 'backend_integrator', 'deployment_guardian'][:num_agents]
         
         agent_ids = []
         for i, role in enumerate(roles):

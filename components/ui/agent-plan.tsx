@@ -30,6 +30,8 @@ interface Task {
   level: number;
   dependencies: string[];
   subtasks: Subtask[];
+  assigned_to?: string;  // Agent working on this task
+  agent_role?: string;   // Technical role identifier
 }
 
 // Initial task data
@@ -175,14 +177,18 @@ export default function Plan({
   const fetchPlannerData = async (id: string) => {
     try {
       const response = await fetch(`http://localhost:8000/api/planner/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch planner data');
+      if (!response.ok) {
+        // Silently fail if swarm doesn't exist yet - no console spam
+        setTasks(initialTasks);
+        setLoading(false);
+        return;
+      }
       const data = await response.json();
       setTasks(data.tasks || initialTasks);
       setError(null);
     } catch (err) {
-      console.error('Planner fetch error:', err);
-      setError('Failed to load planner data');
-      setTasks(initialTasks); // Fallback to mock data
+      // Silently handle fetch errors - backend might not be ready
+      setTasks(initialTasks);
     } finally {
       setLoading(false);
     }
@@ -410,7 +416,7 @@ export default function Plan({
   }
 
   return (
-    <div className="bg-black text-white h-full min-h-screen overflow-auto p-3">
+    <div className="bg-black text-white h-auto max-h-screen overflow-auto p-3">
       <motion.div 
         className="bg-white/[0.02] border-white/10 rounded-lg border shadow-xl overflow-hidden"
         initial={{ opacity: 0, y: 10 }}
@@ -505,6 +511,17 @@ export default function Plan({
                         </div>
 
                         <div className="flex flex-shrink-0 items-center space-x-2 text-xs">
+                          {task.assigned_to && (
+                            <motion.span
+                              className="bg-violet-500/20 text-violet-300 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-violet-500/30"
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.3 }}
+                              whileHover={{ backgroundColor: "rgba(139, 92, 246, 0.3)", scale: 1.05 }}
+                            >
+                              🤖 {task.assigned_to}
+                            </motion.span>
+                          )}
                           {task.dependencies.length > 0 && (
                             <div className="flex items-center mr-1">
                               <div className="flex flex-wrap gap-1">

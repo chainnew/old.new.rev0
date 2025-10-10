@@ -1,0 +1,43 @@
+{
+  "swarm_id": "379e22a1-caae-46e7-ba9c-7d590a6121c3",
+  "created_at": "2025-10-10T09:01:06.481462",
+  "template": "fullstack",
+  "scope": {
+    "project": "TaskMasterPro",
+    "goal": "Build me a modern landing page for a SaaS product called TaskMaster Pro with hero, features grid, and pricing table",
+    "tech_stack": {
+      "frontend": "Next.js 14 + TS + Tailwind + Shadcn",
+      "backend": "FastAPI",
+      "database": "PostgreSQL"
+    },
+    "features": [
+      "core functionality"
+    ],
+    "comps": [
+      "Industry standard"
+    ],
+    "timeline": "1-2h",
+    "outcome": "MVP on localhost:3000",
+    "scope_of_works": {
+      "in_scope": [
+        "Research",
+        "Design",
+        "Implementation"
+      ],
+      "out_scope": [],
+      "milestones": [
+        "M1: Setup",
+        "M2: MVP",
+        "M3: Deploy"
+      ],
+      "risks": [],
+      "kpis": [
+        "Working prototype"
+      ]
+    }
+  },
+  "status": "initializing",
+  "agents": [],
+  "files_created": 0,
+  "tasks_completed": 0
+}

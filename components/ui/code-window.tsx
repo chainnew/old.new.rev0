@@ -99,10 +99,15 @@ const mockFileTree: FileNode[] = [
   }
 ];
 
-export function CodeWindow() {
-  const [fileTree] = useState<FileNode[]>(mockFileTree);
+interface CodeWindowProps {
+  swarmId?: string | null;
+}
+
+export function CodeWindow({ swarmId }: CodeWindowProps = {}) {
+  const [fileTree, setFileTree] = useState<FileNode[]>(mockFileTree);
   const [openTabs, setOpenTabs] = useState<CodeTab[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['1', '2']));
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,15 +121,53 @@ export function CodeWindow() {
   const [renamingNode, setRenamingNode] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
+  // Fetch real files when swarmId changes
+  useEffect(() => {
+    if (!swarmId) {
+      setFileTree(mockFileTree);
+      return;
+    }
+
+    const fetchFiles = () => {
+      setLoading(true);
+      fetch(`http://localhost:8000/api/projects/${swarmId}/files`)
+        .then(res => {
+          if (!res.ok) throw new Error('Not found');
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.files && Array.isArray(data.files) && data.files.length > 0) {
+            setFileTree(data.files);
+          } else {
+            setFileTree(mockFileTree);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          // Silently handle - backend might not be ready or swarm doesn't exist yet
+          setFileTree(mockFileTree);
+          setLoading(false);
+        });
+    };
+
+    // Initial fetch
+    fetchFiles();
+
+    // Poll for updates every 3 seconds while swarm is active
+    const interval = setInterval(fetchFiles, 3000);
+
+    return () => clearInterval(interval);
+  }, [swarmId]);
+
   const handleCopy = async (code: string) => {
     await navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const openFile = (file: FileNode) => {
-    if (file.type !== 'file' || !file.code) return;
-    
+  const openFile = async (file: FileNode) => {
+    if (file.type !== 'file') return;
+
     // Check if tab already exists
     const existingTab = openTabs.find(tab => tab.path === file.path);
     if (existingTab) {
@@ -132,12 +175,26 @@ export function CodeWindow() {
       return;
     }
 
+    // Fetch file content from API if swarmId exists
+    let fileContent = file.code || '// Loading...';
+
+    if (swarmId && !file.code) {
+      try {
+        const response = await fetch(`http://localhost:8000/api/projects/${swarmId}/files/${file.path}`);
+        const data = await response.json();
+        fileContent = data.content || '';
+      } catch (err) {
+        console.error('Failed to load file content:', err);
+        fileContent = '// Error loading file';
+      }
+    }
+
     // Create new tab
     const newTab: CodeTab = {
       id: file.id,
       filename: file.name,
       language: file.language || 'text',
-      code: file.code,
+      code: fileContent,
       path: file.path,
       isDirty: false
     };
@@ -269,6 +326,7 @@ export function CodeWindow() {
   }, []);
 
   const renderFileTree = (nodes: FileNode[], depth: number = 0) => {
+    if (!nodes || !Array.isArray(nodes)) return null;
     return nodes.map(node => (
       <div key={node.id}>
         {renamingNode === node.id ? (

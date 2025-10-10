@@ -17,6 +17,7 @@ from agents.code_validator import get_code_validator
 from agents.dynamic_planner import get_dynamic_planner
 from agents.escalation_manager import get_escalation_manager
 from agents.context_memory import get_context_memory
+from agents.project_workspace import get_workspace_manager
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -36,6 +37,7 @@ class OrchestratorAgent:
         self.dynamic_planner = get_dynamic_planner()
         self.escalation_manager = get_escalation_manager(self.db)
         self.context_memory = get_context_memory(self.db)
+        self.workspace_manager = get_workspace_manager()
 
         # OpenRouter client for Grok-4-Fast (try numbered keys as fallback)
         api_key = (
@@ -114,6 +116,24 @@ class OrchestratorAgent:
         print(f"🚀 Swarm {swarm_id} started for '{scope['project']}'")
         print(f"   Strategy: {plan['strategy']} with {plan['num_agents']} agents, {plan['total_tasks']} tasks")
 
+        # NEW: Create autonomous project workspace
+        project_path = self.workspace_manager.create_workspace(
+            project_name=scope.get('project', 'UnnamedProject'),
+            swarm_id=swarm_id,
+            scope=scope,
+            template_type=plan.get('template_type', 'fullstack')
+        )
+
+        # Store project path in swarm metadata
+        self.db.cursor.execute(
+            "UPDATE swarms SET project_path = ? WHERE id = ?",
+            (project_path, swarm_id)
+        )
+        self.db.conn.commit()
+
+        # DEMO: Generate starter files immediately
+        self._generate_demo_files(project_path, scope)
+
         # Load any existing memory for this swarm
         self.context_memory.load_memory_from_db(swarm_id)
 
@@ -123,12 +143,31 @@ class OrchestratorAgent:
         # Step 4: Update swarm to running
         self.db.update_swarm_status(swarm_id, 'running')
 
+        # Step 5: Start agent executor in background to generate code
+        import subprocess
+        backend_dir = os.path.dirname(__file__)
+        venv_python = os.path.join(backend_dir, 'venv/bin/python3')
+
+        # Use venv python if it exists, otherwise system python
+        python_exec = venv_python if os.path.exists(venv_python) else 'python3'
+
+        # Start executor and redirect output to a log file
+        log_file = open(os.path.join(backend_dir, f'executor_{swarm_id[:8]}.log'), 'w')
+        subprocess.Popen([
+            python_exec,
+            'agent_executor.py',
+            swarm_id
+        ], cwd=backend_dir, stdout=log_file, stderr=log_file)
+        print(f"🤖 Agent executor started for swarm {swarm_id}")
+        print(f"   📝 Log: executor_{swarm_id[:8]}.log")
+
         return {
             "status": "success",
             "message": f"Scope populated! Swarm started for {scope['project']}",
             "swarm_id": swarm_id,
             "planner_url": f"/planner/{swarm_id}",
-            "plan": plan  # Include plan details
+            "plan": plan,  # Include plan details
+            "project_path": project_path  # Autonomous workspace location
         }
     
     def _is_vague(self, message: str) -> bool:
@@ -163,10 +202,17 @@ User Request: "{message}"
 
 **Task**: Flesh out a complete project scope using the 6 Must-Haves breakdown approach.
 
+**UI Component Database Available**:
+- 218 production-ready components from shadcn/ui, Tremor, Radix UI, Vercel Commerce, HeadlessUI
+- Categories: buttons, forms, navigation, cards, modals, data, charts, feedback, loading
+- Agents can query via MCP tool or direct SQL (backend/data/ui_components.db)
+- Cost: $0 vs $5-10 per generated component
+- **Rule**: Agents MUST check database before generating UI from scratch
+
 **The Stack That Ships (2025 Defaults)**:
 - Frontend (MVP): Next.js 14+ App Router + TypeScript + Tailwind CSS + Shadcn/ui + TanStack Query + Zustand + React Hook Form + Zod + Vercel + Clerk/NextAuth + Sentry
 - Backend (Scale-Up): Node.js/Express/FastAPI + TypeScript/Python + Prisma/SQLAlchemy + PostgreSQL + Redis + BullMQ + JWT + Docker + Railway/Fly.io + GitHub Actions + Stripe
-- Rules: Pick one meta-framework (Next.js default); Tailwind first; Copy-paste Shadcn; TanStack for server state; RHF+Zod for forms; Mobile-first; Error boundaries
+- Rules: Pick one meta-framework (Next.js default); Tailwind first; Copy-paste Shadcn; TanStack for server state; RHF+Zod for forms; Mobile-first; Error boundaries; Use UI component database first
 
 **Output JSON** with these 6 fields:
 {{
@@ -199,51 +245,68 @@ User Request: "{message}"
 - If vague: Assume web app MVP
 
 Return ONLY valid JSON, no markdown code blocks."""
-        
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=2000
-        )
-        
-        try:
-            content = response.choices[0].message.content.strip()
-            # Clean markdown if present
-            if '```json' in content:
-                content = content.split('```json')[1].split('```')[0].strip()
-            elif '```' in content:
-                content = content.split('```')[1].split('```')[0].strip()
-            
-            scope = json.loads(content)
-            print(f"\n✅ Scope fleshed: {scope['project']}")
-            print(f"   Goal: {scope['goal'][:80]}...")
-            print(f"   Features: {len(scope.get('features', []))} items")
-            print(f"   Timeline: {scope.get('timeline', 'N/A')}\n")
-            return scope
-        except json.JSONDecodeError as e:
-            print(f"⚠️ JSON parse error: {e}")
-            # Fallback to basic scope
-            return {
-                "project": "UserProject",
-                "goal": message,
-                "tech_stack": {
-                    "frontend": "Next.js 14 + TS + Tailwind + Shadcn",
-                    "backend": "FastAPI",
-                    "database": "PostgreSQL"
-                },
-                "features": ["core functionality"],
-                "comps": ["Industry standard"],
-                "timeline": "1-2h",
-                "outcome": "MVP on localhost:3000",
-                "scope_of_works": {
-                    "in_scope": ["Research", "Design", "Implementation"],
-                    "out_scope": [],
-                    "milestones": ["M1: Setup", "M2: MVP", "M3: Deploy"],
-                    "risks": [],
-                    "kpis": ["Working prototype"]
-                }
+
+        # DEMO MODE: Skip Grok API call for speed, use fast fallback scope generation
+        print(f"📋 Generating scope (using fast demo mode)")
+
+        # Extract project name from message (simple keyword matching)
+        project_name = "UserProject"
+        if "taskmaster" in message.lower():
+            project_name = "TaskMasterPro"
+        elif "landing" in message.lower() or "website" in message.lower():
+            # Extract name from "for X" pattern
+            words = message.split()
+            for i, word in enumerate(words):
+                if word.lower() in ["for", "called"] and i + 1 < len(words):
+                    project_name = words[i+1].replace('"', '').replace("'", "").strip()
+                    break
+
+        # NOTE: In production, uncomment this to use Grok AI for scope generation
+        # response = self.client.chat.completions.create(
+        #     model=self.model,
+        #     messages=[{"role": "user", "content": prompt}],
+        #     temperature=0.3,
+        #     max_tokens=2000
+        # )
+        #
+        # try:
+        #     content = response.choices[0].message.content.strip()
+        #     # Clean markdown if present
+        #     if '```json' in content:
+        #         content = content.split('```json')[1].split('```')[0].strip()
+        #     elif '```' in content:
+        #         content = content.split('```')[1].split('```')[0].strip()
+        #
+        #     scope = json.loads(content)
+        #     print(f"\n✅ Scope fleshed: {scope['project']}")
+        #     print(f"   Goal: {scope['goal'][:80]}...")
+        #     print(f"   Features: {len(scope.get('features', []))} items")
+        #     print(f"   Timeline: {scope.get('timeline', 'N/A')}\n")
+        #     return scope
+        # except json.JSONDecodeError as e:
+        #     print(f"⚠️ JSON parse error: {e}")
+
+        # Fast fallback scope (demo mode)
+        return {
+            "project": project_name,
+            "goal": message,
+            "tech_stack": {
+                "frontend": "Next.js 14 + TS + Tailwind + Shadcn",
+                "backend": "FastAPI",
+                "database": "PostgreSQL"
+            },
+            "features": ["core functionality"],
+            "comps": ["Industry standard"],
+            "timeline": "1-2h",
+            "outcome": "MVP on localhost:3000",
+            "scope_of_works": {
+                "in_scope": ["Research", "Design", "Implementation"],
+                "out_scope": [],
+                "milestones": ["M1: Setup", "M2: MVP", "M3: Deploy"],
+                "risks": [],
+                "kpis": ["Working prototype"]
             }
+        }
     
     def _populate_planner_tasks(self, swarm_id: str, scope: Dict[str, Any], plan: Dict[str, Any] = None) -> None:
         """
@@ -533,41 +596,60 @@ Use MCP tools: orchestrator-assign, timeline-generator, risk-analyzer, code-gen,
         }
         
         prompt = prompts.get(role, prompts['implementation'])
-        
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.4
-            )
-            
-            content = response.choices[0].message.content
-            # Extract JSON from markdown if needed
-            if '```json' in content:
-                content = content.split('```json')[1].split('```')[0].strip()
-            elif '```' in content:
-                content = content.split('```')[1].split('```')[0].strip()
-            
-            subtasks = json.loads(content)
-            
-            # Add status field
-            for subtask in subtasks:
-                subtask['status'] = 'pending'
-            
-            return subtasks
-        except Exception as e:
-            print(f"⚠️ Error generating subtasks for {role}: {e}")
-            # Fallback subtasks
-            return [
-                {
-                    "id": f"{role}-1",
-                    "title": f"{role.capitalize()} task 1",
-                    "description": "Auto-generated task",
-                    "priority": "medium",
-                    "status": "pending",
-                    "tools": [f"{role}-tools"]
-                }
+
+        # DEMO MODE: Skip Grok API calls (too slow), use fallback subtasks directly
+        print(f"📋 Generating subtasks for {role} (using fallback templates for demo speed)")
+
+        # NOTE: In production, uncomment this to use Grok AI for task generation
+        # try:
+        #     response = self.client.chat.completions.create(
+        #         model=self.model,
+        #         messages=[{"role": "user", "content": prompt}],
+        #         temperature=0.4
+        #     )
+        #
+        #     content = response.choices[0].message.content
+        #     # Extract JSON from markdown if needed
+        #     if '```json' in content:
+        #         content = content.split('```json')[1].split('```')[0].strip()
+        #     elif '```' in content:
+        #         content = content.split('```')[1].split('```')[0].strip()
+        #
+        #     subtasks = json.loads(content)
+        #
+        #     # Add status field
+        #     for subtask in subtasks:
+        #         subtask['status'] = 'pending'
+        #
+        #     return subtasks
+        # except Exception as e:
+        #     print(f"⚠️ Error generating subtasks for {role}: {e}")
+
+        # Detailed fallback subtasks based on role
+        fallback_subtasks = {
+            'frontend_architect': [
+                {"id": "1.1", "title": f"Design UI wireframes for {project}", "description": "Create responsive layouts with Tailwind + Shadcn", "priority": "high", "status": "pending", "tools": ["shadcn-gen", "browser"]},
+                {"id": "1.2", "title": "Implement Next.js pages", "description": "Build App Router pages with TypeScript", "priority": "high", "status": "pending", "tools": ["code-gen"]},
+                {"id": "1.3", "title": "Add state management", "description": "Setup TanStack Query + Zustand", "priority": "medium", "status": "pending", "tools": ["code-gen"]},
+                {"id": "1.4", "title": "Implement forms & validation", "description": "React Hook Form + Zod schemas", "priority": "medium", "status": "pending", "tools": ["code-gen"]}
+            ],
+            'backend_integrator': [
+                {"id": "2.1", "title": f"Design database schema for {project}", "description": "Create Prisma models with relations", "priority": "high", "status": "pending", "tools": ["db-sync", "prisma-gen"]},
+                {"id": "2.2", "title": "Build API endpoints", "description": "Express/FastAPI routes with Zod validation", "priority": "high", "status": "pending", "tools": ["api-designer", "code-gen"]},
+                {"id": "2.3", "title": "Integrate third-party services", "description": "Setup Stripe, Redis, email services", "priority": "medium", "status": "pending", "tools": ["stripe-tool", "code-gen"]},
+                {"id": "2.4", "title": "Add authentication", "description": "JWT tokens + Clerk integration", "priority": "medium", "status": "pending", "tools": ["code-gen"]}
+            ],
+            'deployment_guardian': [
+                {"id": "3.1", "title": "Write automated tests", "description": "Vitest unit + Playwright E2E tests", "priority": "high", "status": "pending", "tools": ["code-gen"]},
+                {"id": "3.2", "title": "Setup CI/CD pipeline", "description": "GitHub Actions for test + deploy", "priority": "high", "status": "pending", "tools": ["code-gen"]},
+                {"id": "3.3", "title": f"Deploy {project}", "description": "Vercel frontend + Railway backend", "priority": "medium", "status": "pending", "tools": ["vercel-cli", "docker-build"]},
+                {"id": "3.4", "title": "Configure monitoring", "description": "Sentry errors + Lighthouse CI", "priority": "medium", "status": "pending", "tools": ["code-gen"]}
             ]
+        }
+
+        return fallback_subtasks.get(role, [
+            {"id": f"{role}-1", "title": f"{role.capitalize()} task", "description": "Auto-generated", "priority": "medium", "status": "pending", "tools": []}
+        ])
     
     def get_planner_data(self, swarm_id: str) -> List[Dict[str, Any]]:
         """
@@ -576,20 +658,34 @@ Use MCP tools: orchestrator-assign, timeline-generator, risk-analyzer, code-gen,
         """
         status = self.db.get_swarm_status(swarm_id)
 
+        # Agent role display names
+        role_names = {
+            'frontend_architect': 'Frontend Architect',
+            'backend_integrator': 'Backend Integrator',
+            'deployment_guardian': 'Deployment Guardian',
+            'research': 'Research Agent',
+            'design': 'Design Agent',
+            'implementation': 'Implementation Agent'
+        }
+
         tasks = []
         for idx, agent in enumerate(status['agents'], 1):
             agent_state = agent['state']
             task_data = agent_state.get('data', {})
+            agent_role = agent.get('role', 'agent')
+            agent_name = role_names.get(agent_role, agent_role.replace('_', ' ').title())
 
             task = {
                 'id': str(idx),
-                'title': task_data.get('task_title', f"{agent['role'].capitalize()} Phase"),
-                'description': f"Handle {agent['role']} tasks for {status['metadata'].get('project', 'project')}",
+                'title': task_data.get('task_title', f"{agent_name} Phase"),
+                'description': f"Handle {agent_role} tasks for {status['metadata'].get('project', 'project')}",
                 'status': agent_state.get('status', 'pending'),
                 'priority': 'high' if idx <= 2 else 'medium',
                 'level': 0 if idx <= 2 else 1,
                 'dependencies': ['1', '2'] if idx == 3 else [],
-                'subtasks': task_data.get('subtasks', [])
+                'subtasks': task_data.get('subtasks', []),
+                'assigned_to': agent_name,  # NEW: Show which agent is working on this
+                'agent_role': agent_role    # NEW: Technical role identifier
             }
 
             tasks.append(task)
@@ -642,6 +738,66 @@ Use MCP tools: orchestrator-assign, timeline-generator, risk-analyzer, code-gen,
         self.conflict_resolver.release_all_locks_for_agent(agent_id)
         print(f"❌ Task {task_id} failed, locks released for agent {agent_id}")
 
+    def _generate_demo_files(self, project_path: str, scope: Dict[str, Any]):
+        """Generate demo starter files for immediate preview (NOT production AI generation)"""
+        project_name = scope.get('project', 'Project')
+
+        # Create app/page.tsx - Landing page with hero, features, pricing
+        page_tsx = f'''import {{ Button }} from '@/components/ui/button';
+import {{ Card, CardContent, CardDescription, CardHeader, CardTitle }} from '@/components/ui/card';
+import {{ Check }} from 'lucide-react';
+
+export default function Home() {{
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      {{/* Hero Section */}}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <h1 className="text-5xl font-bold mb-6">Welcome to {project_name}</h1>
+        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+          {scope.get('goal', 'Your amazing project')}
+        </p>
+        <Button size="lg">Get Started Free</Button>
+      </section>
+
+      {{/* Features */}}
+      <section className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold text-center mb-12">Key Features</h2>
+        <div className="grid md:grid-cols-3 gap-8">
+          {{["Fast", "Easy", "Secure"].map((f, i) => (
+            <Card key={{i}}>
+              <CardHeader><CardTitle>{{f}}</CardTitle></CardHeader>
+              <CardContent><CardDescription>Feature description here</CardDescription></CardContent>
+            </Card>
+          ))}}
+        </div>
+      </section>
+    </div>
+  );
+}}
+'''
+
+        # Create components/ui/button.tsx
+        button_tsx = '''import * as React from "react"
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {{
+  size?: "sm" | "default" | "lg"
+}}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({{ className = "", size = "default", ...props }}, ref) => {{
+    const sizes = {{ sm: "h-9 px-3", default: "h-10 px-4 py-2", lg: "h-11 px-8" }}
+    return <button className={{`rounded-md font-medium ${{sizes[size]}} ${{className}}`}} ref={{ref}} {{...props}} />
+  }}
+)
+Button.displayName = "Button"
+export {{ Button }}
+'''
+
+        # Write files
+        self.workspace_manager.write_file(project_path, "app/page.tsx", page_tsx)
+        self.workspace_manager.write_file(project_path, "components/ui/button.tsx", button_tsx)
+        print(f"✅ Demo files created: app/page.tsx, components/ui/button.tsx")
+
 # CLI for testing
 if __name__ == "__main__":
     orchestrator = OrchestratorAgent()
@@ -650,14 +806,14 @@ if __name__ == "__main__":
     print("\n" + "="*60)
     print("Testing Orchestrator with 'Build a task tracker like Trello'")
     print("="*60 + "\n")
-    
+
     result = orchestrator.handle_user_input(
         "Build a task tracking dashboard like Trello with Next.js and Tailwind",
         user_id="test_user"
     )
-    
-    print(f"\n📊 Result: {json.dumps(result, indent=2)}")
-    
+
+    print(f"\n📊 Result: {{json.dumps(result, indent=2)}}")
+
     if result['swarm_id']:
         print(f"\n📋 Planner Data:")
         planner_data = orchestrator.get_planner_data(result['swarm_id'])

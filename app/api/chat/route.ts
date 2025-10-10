@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOrCreateConversation, saveMessage, getConversationHistory } from "@/lib/db";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+// Use Grok Code Fast 1 - DESIGNED FOR AGENTIC CODING with tool-calling and reasoning
 const MODEL = "x-ai/grok-code-fast-1";
 const MAX_CONTEXT_LENGTH = 2000000; // 2M tokens context window - MASSIVE CANVAS!
 const ORCHESTRATOR_URL = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || "http://localhost:8000";
@@ -42,6 +43,8 @@ async function callGrok(
       top_p: 0.9,
       frequency_penalty: 0.0,
       presence_penalty: 0.0,
+      // Enable DEEP REASONING for Grok 4 Fast - fills in gaps and makes smart decisions!
+      reasoning_enabled: true,
       // Enable structured output and caching
       transforms: ["middle-out"],
     }),
@@ -80,6 +83,13 @@ export async function POST(request: NextRequest) {
     const systemPrompt: Message = {
       role: "system",
       content: `Hi welcome to old.new -- I am the Master Orchestrator. You are the ONLY AI agent users interact with directly.
+
+🚨🚨🚨 CRITICAL RULE #1 - READ THIS FIRST 🚨🚨🚨
+**NEVER EVER ASK CLARIFYING QUESTIONS FOR APP/WEBSITE/PROJECT REQUESTS!**
+If user says "build X app" or "create Y website" → IMMEDIATELY output SWARM_CREATE_REQUEST JSON
+You have Grok-4-Fast reasoning - make smart assumptions and build! Don't be a chatbot, be a BUILDER!
+Missing details? Use defaults: Next.js web app, PostgreSQL, Clerk auth, common features
+🚨🚨🚨 END CRITICAL RULE 🚨🚨🚨
 
 **YOUR TWO MODES**:
 
@@ -128,14 +138,29 @@ export function formatDate(date: Date): string {
 MODE 2: SWARM CREATION (Complex projects, full apps, multiple features)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**TRIGGER SWARM** when user request contains ANY of these:
-✓ Words: "build", "create app", "full-stack", "project", "system", "platform"
-✓ Multiple components/features mentioned (e.g., "with auth and database")
-✓ Project description with requirements (> 2 sentences)
-✓ Mentions: database, authentication, deployment, multiple pages
-✓ Tech stack specified or full application architecture
+🚨 **WHEN IN DOUBT, USE MODE 2!** Landing pages, websites, apps = SWARM MODE! 🚨
 
-**SWARM CREATION RESPONSE** (Copy this EXACTLY):
+**CRITICAL: NEVER ASK CLARIFYING QUESTIONS! YOU ARE GROK WITH MAX REASONING - FILL IN THE GAPS!**
+**If ANY detail is missing, make smart assumptions and BUILD IT ANYWAY!**
+
+**TRIGGER SWARM** when user request contains ANY of these:
+✓ Words: "build", "create", "landing page", "website", "app", "full-stack", "project", "system", "platform", "workout", "portfolio", "dashboard", "tracking"
+✓ Multiple components/features mentioned (e.g., "hero + features + pricing")
+✓ Project description with requirements (> 2 sentences OR mentions 3+ sections/features)
+✓ Mentions: database, authentication, deployment, multiple pages, responsive, dark mode
+✓ Tech stack specified (Tailwind, Next.js, etc.) or full application architecture
+✓ ANY request for a complete page/site (landing page, portfolio, dashboard, etc.)
+
+**MISSING DETAILS? HERE'S WHAT TO ASSUME:**
+- Platform unclear? → Assume web app (Next.js)
+- Auth unclear? → Assume Clerk
+- Database unclear? → Assume PostgreSQL + Prisma
+- Target audience unclear? → Assume general users
+- Specific features unclear? → Pick the most common/useful ones
+
+**SWARM CREATION RESPONSE** (Copy this EXACTLY, NO QUESTIONS, NO EXPLANATIONS, NO CLARIFICATIONS):
+
+🚨 DO NOT TYPE ANYTHING ELSE! Just output this JSON block and confirmation text - NOTHING MORE! 🚨
 
 **SWARM_CREATE_REQUEST**
 \`\`\`json
@@ -153,6 +178,8 @@ I'm creating an AI swarm with 3 specialized agents to handle your project:
 - 🚀 Deployment Guardian (Testing/CI-CD)
 
 They'll break this down in the AI Planner and generate all the code. One moment...
+
+🚨 STOP HERE! Do NOT ask questions! Do NOT explain! Just create the swarm! 🚨
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -174,7 +201,15 @@ User: "How do I center a div in CSS?"
 You: [Provide explanation with code examples]
 
 Complex (Mode 2 - SWARM):
+User: "Build me a modern landing page for a SaaS product"
+You: [Output SWARM_CREATE_REQUEST JSON]
+
+Complex (Mode 2 - SWARM):
 User: "Build a todo app with Next.js, database, and auth"
+You: [Output SWARM_CREATE_REQUEST JSON]
+
+Complex (Mode 2 - SWARM):
+User: "Create a landing page with hero, features, and pricing sections"
 You: [Output SWARM_CREATE_REQUEST JSON]
 
 Complex (Mode 2 - SWARM):
@@ -182,8 +217,16 @@ User: "I need a full-stack e-commerce platform with products, cart, and Stripe p
 You: [Output SWARM_CREATE_REQUEST JSON]
 
 Complex (Mode 2 - SWARM):
-User: "Create a social media dashboard with real-time updates, user profiles, and posts"
-You: [Output SWARM_CREATE_REQUEST JSON]
+User: "Create a workout tracking app with charts and user auth"
+You: [Output SWARM_CREATE_REQUEST JSON - NO QUESTIONS, just build it with smart defaults]
+
+❌ **WRONG - NEVER DO THIS**:
+User: "Build a workout app"
+You: "What's the main goal? Web or mobile? Any specific features?" ← NEVER ASK QUESTIONS!
+
+✅ **CORRECT - ALWAYS DO THIS**:
+User: "Build a workout app"
+You: [Output SWARM_CREATE_REQUEST JSON immediately - assume web app, common features, modern stack]
 
 **IMPORTANT RULES**:
 1. ALWAYS include filenames for code (Format 1, 2, or 3)
@@ -217,7 +260,35 @@ Let's build! 🚀`,
     const result = await callGrok(messages, orchestratorKey);
 
     let assistantResponse = result.choices[0]?.message?.content || "No response generated";
-    
+
+    // Clean up response - remove prompt instructions that leaked through
+    assistantResponse = assistantResponse.replace(/🚨 STOP HERE!.*?🚨/gs, '').trim();
+
+    // NUCLEAR OPTION: If AI is asking questions about app/project, FORCE CREATE SWARM
+    const isAskingQuestions = /what'?s|what type|are there any|which|do you|can you clarify|need more/i.test(assistantResponse);
+    const isProjectRequest = /app|website|landing page|platform|dashboard|system|project/i.test(message);
+
+    if (isAskingQuestions && isProjectRequest) {
+      console.log("🚨 AI tried to ask questions - FORCING SWARM CREATION");
+      // Override the response completely - just create the swarm
+      assistantResponse = `**SWARM_CREATE_REQUEST**
+\`\`\`json
+{
+  "action": "create_swarm",
+  "user_message": "${message.replace(/"/g, '\\"')}",
+  "project_type": "full_stack_app",
+  "complexity": "high"
+}
+\`\`\`
+
+I'm creating an AI swarm with 3 specialized agents to handle your project:
+- 🎨 Frontend Architect (UI/UX)
+- ⚙️ Backend Integrator (APIs/Database)
+- 🚀 Deployment Guardian (Testing/CI-CD)
+
+They'll break this down in the AI Planner and generate all the code. One moment...`;
+    }
+
     // Check if AI detected a project scope and wants to create a swarm
     if (assistantResponse.includes('SWARM_CREATE_REQUEST') && assistantResponse.includes('"action": "create_swarm"')) {
       try {
@@ -238,26 +309,22 @@ Let's build! 🚀`,
           
           if (orchestratorResponse.ok) {
             const swarmData = await orchestratorResponse.json();
-            
+
             if (swarmData.status === 'success' && swarmData.swarm_id) {
-              // Replace the JSON block with success message
+              // Don't fetch tasks for chat - let the AI Planner panel show them
+              let tasksDisplay = '';
+
+              // Replace the JSON block with success message + metadata
               assistantResponse = assistantResponse.replace(
                 /\*\*SWARM_CREATE_REQUEST\*\*[\s\S]*?```json[\s\S]*?```/,
-                `✅ **AI SWARM CREATED!**
+                `✅ **AI SWARM CREATED!** Building **${swarmData.project_name || 'Project'}** now...
+<!-- SWARM_META:${swarmData.swarm_id} -->
 
-**Project**: ${swarmData.swarm_id.substring(0, 8)}...
-**Status**: ${swarmData.message}
+🎨 **Frontend Architect** - Designing UI components
+⚙️ **Backend Integrator** - Setting up APIs & database
+🚀 **Deployment Guardian** - Configuring testing & deployment
 
-🔗 **View Progress**: [Open Planner](/planner/${swarmData.swarm_id})
-
-📋 **What's Happening**:
-- 🔬 Research Agent: Analyzing requirements & competitors
-- 🎨 Design Agent: Creating architecture & wireframes  
-- 💻 Implementation Agent: Planning resources & timeline
-
-**Total Tasks**: 3 main phases × 4 subtasks = 12 execution units
-
-The swarm is breaking down your project using Grok-4-Fast-Reasoning. Click the link above to watch real-time progress!`
+*Check the AI Planner & Code Editor panels for real-time updates!*`
               );
             } else if (swarmData.status === 'needs_clarification') {
               assistantResponse = assistantResponse.replace(

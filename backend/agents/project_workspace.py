@@ -12,7 +12,12 @@ from datetime import datetime
 class ProjectWorkspace:
     """Manages autonomous project workspace creation and file writing."""
 
-    def __init__(self, projects_root: str = "Projects"):
+    def __init__(self, projects_root: str = None):
+        # Default to root Projects/ directory (outside backend/)
+        if projects_root is None:
+            backend_dir = Path(__file__).parent.parent
+            projects_root = backend_dir.parent / "Projects"
+
         self.projects_root = Path(projects_root)
         self.projects_root.mkdir(exist_ok=True)
 
