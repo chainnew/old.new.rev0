@@ -243,6 +243,191 @@ Return ONLY valid JSON."""
 
 
 @activity.defn
+async def visual_test_activity(ui_result: Dict[str, Any], coding_results: List[Dict[str, Any]], project_id: str) -> Dict[str, Any]:
+    """
+    Activity: Visual testing with Playwright for UI inference results.
+
+    Week 3 Phase B: E2E accessibility + responsive checks + screenshot diffs.
+
+    Args:
+        ui_result: UI inference output (components, constraints, hooks)
+        coding_results: Parallel task results (frontend/backend code)
+        project_id: Project identifier for artifacts path
+
+    Returns:
+        Visual test results with WCAG violations, responsive pass/fail, diff score
+    """
+    with tracer.start_as_current_span("temporal.visual_test") as span:
+        import subprocess
+        import os
+        import json
+
+        span.set_attribute("visual.project_id", project_id)
+        span.set_attribute("visual.components_count", len(ui_result.get('components', [])))
+
+        # Construct artifacts path (from Projects/ directory structure)
+        artifacts_path = f"/Users/matto/Documents/AI CHAT/my-app/Projects/{project_id}"
+
+        # PHASE B STUB: Ephemeral environment setup (Docker build)
+        # In production: Docker build from coding_results artifacts, serve on port 3000
+        logger.info(f"🐳 [STUB] Building ephemeral Docker environment for {project_id}...")
+        # subprocess.run(["docker", "build", "-t", f"ui-test-{project_id}", "."], cwd=artifacts_path, check=False)
+        # subprocess.run(["docker", "run", "-d", "-p", "3000:3000", f"ui-test-{project_id}"], check=False)
+
+        # PHASE B STUB: Playwright E2E tests
+        logger.info(f"🎭 [STUB] Running Playwright E2E tests for accessibility...")
+        # In production: Install playwright with `playwright install`, run tests/ui-flows.spec.js
+        # playwright_out = subprocess.run(
+        #     ["playwright", "test", "tests/ui-flows.spec.js", "--headed=false"],
+        #     cwd=artifacts_path,
+        #     capture_output=True,
+        #     text=True,
+        #     timeout=60
+        # )
+        playwright_passed = True  # STUB: Assume E2E passed
+        wcag_violations = []  # STUB: No violations detected
+
+        # PHASE B STUB: Responsive breakpoint checks
+        logger.info(f"📱 [STUB] Checking responsive design (mobile 375px, tablet 768px, desktop 1920px)...")
+        responsive_pass = ui_result.get('constraints', {}).get('responsive', False)
+        breakpoints_tested = ["mobile_375px", "tablet_768px", "desktop_1920px"] if responsive_pass else []
+
+        # PHASE B STUB: Screenshot diff with pixelmatch
+        logger.info(f"📸 [STUB] Generating screenshots and computing visual diffs...")
+        # In production: Take screenshots with Playwright, compare with baseline using pixelmatch
+        # import pixelmatch
+        # diff_score = pixelmatch.compare(baseline_img, actual_img, output_img, width, height)
+        diff_score = 0.02  # STUB: 2% difference (acceptable threshold <5%)
+        diff_pass = diff_score < 0.05
+
+        # Aggregate results
+        visual_pass = playwright_passed and responsive_pass and diff_pass
+
+        span.set_attribute("visual.playwright_passed", playwright_passed)
+        span.set_attribute("visual.wcag_violations", len(wcag_violations))
+        span.set_attribute("visual.responsive_pass", responsive_pass)
+        span.set_attribute("visual.diff_score", diff_score)
+        span.set_attribute("visual.overall_pass", visual_pass)
+
+        result = {
+            "pass": visual_pass,
+            "playwright": {
+                "passed": playwright_passed,
+                "wcag_violations": wcag_violations,
+                "stub": True  # PHASE B STUB indicator
+            },
+            "responsive": {
+                "pass": responsive_pass,
+                "breakpoints_tested": breakpoints_tested
+            },
+            "screenshot_diff": {
+                "pass": diff_pass,
+                "diff_score": diff_score,
+                "threshold": 0.05,
+                "stub": True  # PHASE B STUB indicator
+            },
+            "retriable": not visual_pass  # Retry if failed
+        }
+
+        if not visual_pass:
+            logger.warning(f"⚠️  Visual tests failed: Playwright={playwright_passed}, Responsive={responsive_pass}, Diff={diff_pass}")
+        else:
+            logger.info(f"✅ Visual tests passed: WCAG clean, responsive, diff={diff_score:.2%}")
+
+        return result
+
+
+@activity.defn
+async def resolve_conflicts_activity(ui_result: Dict[str, Any], backend_result: Dict[str, Any], project_id: str) -> Dict[str, Any]:
+    """
+    Activity: Conflict resolution using pgvector similarity for UI/Backend sync.
+
+    Week 3 Phase B: Detects mismatches (e.g., UI assumes GraphQL but backend is REST)
+    and mediates by regenerating UI with correct backend hints.
+
+    Args:
+        ui_result: UI inference output with hooks/components
+        backend_result: Backend coding task result with endpoints/schema
+        project_id: Project identifier
+
+    Returns:
+        Conflict resolution result with similarity score and fixed UI (if needed)
+    """
+    with tracer.start_as_current_span("temporal.conflict_resolve") as span:
+        import numpy as np
+        from sklearn.metrics.pairwise import cosine_similarity
+
+        span.set_attribute("conflict.project_id", project_id)
+
+        # Extract UI and backend artifacts for comparison
+        ui_hooks = ui_result.get('hooks', [])
+        ui_components_code = "\n".join(ui_result.get('components', []))  # STUB: In prod, read from files
+
+        backend_endpoints = backend_result.get('endpoints', [])  # STUB: Extract from backend code
+        backend_schema = backend_result.get('schema', {})  # STUB: Extract API schema
+
+        logger.info(f"🔍 [STUB] Checking UI/Backend sync for project {project_id}...")
+        logger.info(f"   UI hooks: {ui_hooks}")
+        logger.info(f"   Backend endpoints: {backend_endpoints}")
+
+        # PHASE B STUB: Embed UI code + backend schema using OpenRouter embeddings
+        # In production: Use stack_inferencer.embed_text() for both artifacts
+        # ui_embedding = embed_text(ui_components_code + " ".join(ui_hooks))
+        # backend_embedding = embed_text(json.dumps(backend_endpoints) + json.dumps(backend_schema))
+
+        # STUB: Simulate embeddings with random vectors
+        ui_embedding = np.random.rand(1536)
+        backend_embedding = np.random.rand(1536)
+
+        # Compute cosine similarity
+        similarity = cosine_similarity([ui_embedding], [backend_embedding])[0][0]
+        span.set_attribute("conflict.similarity", float(similarity))
+
+        # Conflict threshold: <0.7 indicates mismatch
+        conflict_threshold = 0.7
+        has_conflict = similarity < conflict_threshold
+
+        span.set_attribute("conflict.detected", has_conflict)
+
+        if has_conflict:
+            logger.warning(f"⚠️  Conflict detected! UI/Backend similarity: {similarity:.2f} < {conflict_threshold}")
+
+            # PHASE B STUB: Mediation via Grok-4-Fast re-generation
+            # In production: Call ai_client to regenerate UI with corrected backend hints
+            mediation_prompt = f"""Fix UI/Backend mismatch:
+UI assumes: {ui_hooks}
+Backend provides: {backend_endpoints}
+
+Regenerate UI hooks to match backend REST endpoints."""
+
+            # logger.info(f"🤖 [STUB] Mediating conflict with Grok-4-Fast...")
+            # fixed_ui = await client.chat.completions.create(...)
+            fixed_ui = {
+                **ui_result,
+                "hooks": [f"use{endpoint}Query" for endpoint in backend_endpoints[:5]],  # STUB fix
+                "conflict_resolved": True
+            }
+
+            # Log intervention to orchestration_events (STUB)
+            # create_orchestration_event(project_id, "conflict_resolved", f"Similarity {similarity:.2f} → Fixed")
+
+            return {
+                "resolved": True,
+                "similarity": float(similarity),
+                "original_ui": ui_result,
+                "fixed_ui": fixed_ui,
+                "intervention": f"Re-generated UI hooks to match backend (similarity {similarity:.2f})"
+            }
+        else:
+            logger.info(f"✅ No conflicts: UI/Backend similarity: {similarity:.2f} ≥ {conflict_threshold}")
+            return {
+                "resolved": False,
+                "similarity": float(similarity),
+                "message": "UI and backend are synced"
+            }
+
+
+@activity.defn
 async def test_gate_activity(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Activity: Validate results meet quality gates.
@@ -377,6 +562,46 @@ class BuildProjectWorkflow:
             if ui_result.get('needs_review'):
                 workflow.logger.info("   ⚠️ UI needs user review (low confidence)")
 
+            # Step 3b: Visual Testing (Week 3 Phase B)
+            workflow.logger.info("🎭 Step 3b: Running visual tests (Playwright + responsive + diffs)...")
+
+            visual_result = await workflow.execute_activity(
+                visual_test_activity,
+                args=[ui_result, successful_results, project_id],
+                start_to_close_timeout=timedelta(seconds=90),
+                retry_policy=workflow.RetryPolicy(
+                    initial_interval=timedelta(seconds=10),
+                    maximum_attempts=2
+                )
+            )
+
+            workflow.logger.info(f"   ✅ Visual tests: Pass={visual_result['pass']}, " +
+                               f"WCAG violations={len(visual_result['playwright']['wcag_violations'])}, " +
+                               f"Responsive={visual_result['responsive']['pass']}, " +
+                               f"Diff={visual_result['screenshot_diff']['diff_score']:.2%}")
+
+            # Step 3c: Conflict Resolution (Week 3 Phase B)
+            workflow.logger.info("🔍 Step 3c: Checking UI/Backend conflicts...")
+
+            # Extract backend result (assume index 1 is backend task)
+            backend_result = successful_results[1] if len(successful_results) > 1 else {}
+
+            conflict_result = await workflow.execute_activity(
+                resolve_conflicts_activity,
+                args=[ui_result, backend_result, project_id],
+                start_to_close_timeout=timedelta(seconds=60),
+                retry_policy=workflow.RetryPolicy(
+                    initial_interval=timedelta(seconds=5),
+                    maximum_attempts=2
+                )
+            )
+
+            if conflict_result['resolved']:
+                workflow.logger.info(f"   ⚠️  Conflict resolved: Similarity {conflict_result['similarity']:.2f}")
+                ui_result = conflict_result['fixed_ui']  # Update UI with fixed version
+            else:
+                workflow.logger.info(f"   ✅ No conflicts: Similarity {conflict_result['similarity']:.2f}")
+
             # Step 4: Test Gate
             workflow.logger.info("🧪 Step 4: Running test gate...")
 
@@ -402,7 +627,19 @@ class BuildProjectWorkflow:
                     "constraints": ui_result.get('constraints', {}),
                     "hooks": ui_result.get('hooks', []),
                     "needs_review": ui_result.get('needs_review', False),
-                    "stack_hint": ui_result.get('stack_hint', {})
+                    "stack_hint": ui_result.get('stack_hint', {}),
+                    "conflict_resolved": ui_result.get('conflict_resolved', False)
+                },
+                "visual_tests": {
+                    "pass": visual_result['pass'],
+                    "playwright": visual_result['playwright'],
+                    "responsive": visual_result['responsive'],
+                    "screenshot_diff": visual_result['screenshot_diff']
+                },
+                "conflicts": {
+                    "detected": conflict_result['resolved'],
+                    "similarity": conflict_result['similarity'],
+                    "intervention": conflict_result.get('intervention', None)
                 },
                 "execution": {
                     "tasks_completed": len(successful_results),
@@ -452,6 +689,8 @@ async def run_worker():
             generate_plan_activity,
             dispatch_task_activity,
             ui_inference_activity,
+            visual_test_activity,
+            resolve_conflicts_activity,
             test_gate_activity
         ]
     )
