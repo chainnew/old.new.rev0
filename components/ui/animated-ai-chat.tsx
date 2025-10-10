@@ -189,7 +189,7 @@ export function AnimatedAIChat() {
     });
     const [inputFocused, setInputFocused] = useState(false);
     const commandPaletteRef = useRef<HTMLDivElement>(null);
-    const [conversationId, setConversationId] = useState(() => `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    const [conversationId, setConversationId] = useState(() => crypto.randomUUID());
     const [isMounted, setIsMounted] = useState(false);
     const [plannerNotification, setPlannerNotification] = useState(false);
     const [showCode, setShowCode] = useState(false);
@@ -610,7 +610,7 @@ export function AnimatedAIChat() {
                     <motion.button
                         onClick={() => {
                             setMessages([]);
-                            setConversationId(`conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+                            setConversationId(crypto.randomUUID());
                         }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
