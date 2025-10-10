@@ -28,6 +28,41 @@ echo "🌐 Creating Temporal network..."
 docker network create temporal-net 2>/dev/null || echo "   (Network already exists)"
 echo ""
 
+# Check if PostgreSQL is already running
+if docker ps | grep -q temporal-postgres; then
+    echo "✅ PostgreSQL already running"
+else
+    echo "🐘 Starting PostgreSQL for Temporal..."
+    docker run -d \
+        --name temporal-postgres \
+        --network temporal-net \
+        -p 5432:5432 \
+        -e POSTGRES_USER=postgres \
+        -e POSTGRES_PASSWORD=postgres \
+        -e POSTGRES_DB=temporal \
+        postgres:13-alpine
+
+    echo "   Waiting for PostgreSQL to be ready..."
+    sleep 5
+
+    # Wait for PostgreSQL to accept connections
+    for i in {1..10}; do
+        if docker exec temporal-postgres pg_isready -U postgres > /dev/null 2>&1; then
+            echo "✅ PostgreSQL is ready"
+            break
+        fi
+        if [ $i -eq 10 ]; then
+            echo "❌ PostgreSQL failed to start"
+            echo "   Check logs: docker logs temporal-postgres"
+            exit 1
+        fi
+        echo "   Waiting... ($i/10)"
+        sleep 2
+    done
+fi
+
+echo ""
+
 # Check if Temporal is already running
 if docker ps | grep -q temporal-server; then
     echo "⚠️  Temporal server already running"
@@ -54,7 +89,7 @@ docker run -d \
     -e DB_PORT=5432 \
     -e POSTGRES_USER=postgres \
     -e POSTGRES_PWD=postgres \
-    -e POSTGRES_SEEDS=host.docker.internal \
+    -e POSTGRES_SEEDS=temporal-postgres \
     temporalio/auto-setup:1.20.0
 
 echo "   Container started, waiting for initialization..."
@@ -98,6 +133,7 @@ echo "Next steps:"
 echo "1. Start worker: python backend/workflows/build_project_workflow.py"
 echo "2. Run demo: bash backend/scripts/demo_temporal_workflow.sh"
 echo ""
-echo "To stop: docker stop temporal-server"
-echo "To remove: docker rm temporal-server"
+echo "To stop: docker stop temporal-server temporal-postgres"
+echo "To remove: docker rm -f temporal-server temporal-postgres"
+echo "To remove network: docker network rm temporal-net"
 echo ""
