@@ -495,8 +495,8 @@ export function AnimatedAIChat() {
                 setShowCode(true); // Auto-open code editor
             }
 
-            // Typing animation: 120 WPM = ~600 characters per minute = ~10 chars/sec
-            const typingSpeed = 1000 / 10; // ~100ms per character
+            // Typing animation: 140 WPM = ~700 characters per minute = ~11.67 chars/sec
+            const typingSpeed = 1000 / 11.67; // ~85ms per character
             const fullResponse = data.response;
 
             // Add empty message first
