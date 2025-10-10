@@ -11,8 +11,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExport
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, ConsoleMetricExporter
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentation
-from opentelemetry.instrumentation.requests import RequestsInstrumentation
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 import os
 
 # Week 4 Preview: Prometheus exporter
@@ -84,11 +84,11 @@ def init_telemetry(app=None):
 
     # === AUTO-INSTRUMENTATION ===
     # Instrument HTTP requests (for MCP tool calls)
-    RequestsInstrumentation().instrument()
+    RequestsInstrumentor().instrument()
 
     # Instrument FastAPI if app provided
     if app:
-        FastAPIInstrumentation.instrument_app(app)
+        FastAPIInstrumentor.instrument_app(app)
 
     # Get tracer and meter for manual spans
     tracer = trace.get_tracer(__name__)
