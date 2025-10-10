@@ -11,6 +11,14 @@
 
 set -e
 
+# Get project root directory (2 levels up from this script)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+BACKEND_DIR="$PROJECT_ROOT/backend"
+
+# Create necessary directories
+mkdir -p "$BACKEND_DIR/logs"
+
 echo "🚀 Starting All Synergy Services..."
 echo "=========================================="
 echo ""
@@ -22,21 +30,24 @@ if lsof -i:8000 > /dev/null 2>&1; then
     exit 1
 fi
 
+# Change to backend directory for Python imports
+cd "$BACKEND_DIR"
+
 # Start orchestration monitor in background
 echo "📊 Starting Orchestration Monitor (background)..."
-nohup python backend/orchestration_monitor.py > backend/logs/monitor.log 2>&1 &
+nohup python3 orchestration_monitor.py > logs/monitor.log 2>&1 &
 MONITOR_PID=$!
-echo $MONITOR_PID > backend/.monitor.pid
-echo "   PID: $MONITOR_PID (log: backend/logs/monitor.log)"
+echo $MONITOR_PID > .monitor.pid
+echo "   PID: $MONITOR_PID (log: $BACKEND_DIR/logs/monitor.log)"
 echo ""
 
 # Start Temporal worker in background (Phase 2B)
 echo "⚡ Starting Temporal Worker (background)..."
 if docker ps | grep -q temporal-server; then
-    nohup python backend/workflows/build_project_workflow.py > backend/logs/temporal_worker.log 2>&1 &
+    nohup python3 workflows/build_project_workflow.py > logs/temporal_worker.log 2>&1 &
     WORKER_PID=$!
-    echo $WORKER_PID > backend/.worker.pid
-    echo "   PID: $WORKER_PID (log: backend/logs/temporal_worker.log)"
+    echo $WORKER_PID > .worker.pid
+    echo "   PID: $WORKER_PID (log: $BACKEND_DIR/logs/temporal_worker.log)"
     echo "   ✅ Temporal workflows enabled"
 else
     echo "   ⚠️  Temporal server not running (workflows disabled)"
@@ -56,23 +67,20 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Create logs directory
-mkdir -p backend/logs
-
 # Trap to cleanup on exit
 cleanup() {
     echo ''
     echo '🛑 Stopping services...'
     kill $MONITOR_PID 2>/dev/null
-    if [ -f backend/.worker.pid ]; then
-        kill $(cat backend/.worker.pid) 2>/dev/null
-        rm backend/.worker.pid
+    if [ -f "$BACKEND_DIR/.worker.pid" ]; then
+        kill $(cat "$BACKEND_DIR/.worker.pid") 2>/dev/null
+        rm "$BACKEND_DIR/.worker.pid"
     fi
-    rm backend/.monitor.pid 2>/dev/null
+    rm "$BACKEND_DIR/.monitor.pid" 2>/dev/null
     echo '✅ All services stopped'
     exit
 }
 trap cleanup INT TERM
 
 # Start API (foreground - you'll see OTel traces here)
-python backend/swarm_api.py
+python3 swarm_api.py
