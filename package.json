@@ -24,7 +24,7 @@
     "pg": "^8.16.3",
     "prisma": "^6.17.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react-dom": "19.1.1",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.6",
     "synk": "^0.0.2",
