@@ -53,3 +53,4 @@ opentelemetry-instrumentation-requests==0.43b0  # Trace MCP tool calls
 
 # Temporal - Durable Workflow Orchestration (Phase 2B)
 temporalio==1.5.1  # Latest stable with asyncio support
+urllib3>=2.6.3 # not directly required, pinned by Snyk to avoid a vulnerability
